@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8">
+    <title>ChicMic-CanteenApp</title>
+    <link rel="icon" type="image/x-icon" href="https://timedragon.chicmic.in/assets/img/favicon.png" >
+    <header th:replace="/Fragments/MainFragments :: main-header"></header>
+    <style>
+        /* Change the color of buttons to orange */
+        .btn-primary {
+            background-color: orange;
+            border-color: orange;
+        }
+
+        /* Change the color of links to orange */
+        .linkk {
+            color: #f06649;
+        }
+        .button {
+            color: white;
+            background-color: #f06649;
+            border-color :#f06649
+            border-radius : 3px;
+        }
+    </style>
+</head>
+
+<body>
+<!-- Add this HTML element to show the toast -->
+<div class="toast align-items-center text-white bg-danger border-0 position-absolute top-25 start-25 " id="loginFailureToast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+        <div class="toast-body">
+            Login failed! Please check your Email and password.
+        </div>
+        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+</div>
+    <!--  Start Login Page -->
+    <div class="container-fluid px-lg-4  overflow-hidden front_form">
+
+        <div class="row">
+
+            <div class="col-md-6">
+
+                <div class="d-flex flex-column align-items-center justify-content-center py-4 py-md-5 px-4 min-vh-100">
+                    <div class="ls_form m-auto">
+                        <form class="w-100 bg-white" id="loginForm" method="post" action="/login">
+                            <div class="title_group text-center mb-4">
+                                <div class="form_logo d-inline-block mb-4 pb-2">
+                                    <img src="/img/logo.png" alt="QNU" width="116" class="img-fluid" />
+                                </div>
+                                <h1 class="h5 mb-3">Sign in to SuperAdmin Panel</h1>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="mb-2">Email</label>
+                                <div class="position-relative">
+                                    <input type="text" class="form-control" placeholder="Enter Username" name="username" required />
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="mb-2">Password</label>
+                                <div class="position-relative">
+                                    <input type="password" class="form-control" placeholder="********" name="password" required id="pwd" />
+                                    <button type="button" class="show_hide_pwd" onclick="show()"><img src="/img/icons/hide_password.svg" id="EYE" width="16" /></button>
+                                </div>
+                            </div>
+
+                            <div class="mb-4 text-center text-capitalize linkk">
+                                <a class="linkk" href="/forgot-password">Forgot Password?</a>
+                            </div>
+
+                            <div class="mb-2">
+                                <button class="py-md-3 w-100 button text-capitalize" type="submit">
+                                    Log In <i class="ms-3"><img src="/img/icons/arrow_right_icon.svg" alt="" width="20" /></i>
+                                </button>
+                            </div>
+                        </form>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="d-none d-md-flex align-items-center col-md-6 pe-4 py-4 py-md-5">
+                <div class="position-relative d-flex align-item-center flex-column justify-content-center text-start login_bg">
+                    <h2 class="h3 mb-3 text-capitalize">ChicMic Canteen</h2>
+                    <p>This is the Super Admin Panel for ChicMic Canteen WebApp. Thank you for visiting.</p>
+                    <div class="coprht">
+                        &#169; 2023 Chicmic. All Rights Reserved
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--  End Login Page -->
+
+    <!-- Include the jQuery library -->
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Include Bootstrap JS from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+    <script>
+        $(document).ready(function() {
+         const loginFailureToast = new bootstrap.Toast(document.getElementById('loginFailureToast'));
+    // Function to handle form submission
+    function formSubmit(event) {
+      event.preventDefault();
+      const form = $("#loginForm")[0];
+
+      const formData = new FormData(form);
+      const params = new URLSearchParams(formData).toString();
+
+      fetch('/login?' + params, {
+          method: 'POST'
+      }).then(response => {
+                if (response.status === 200) {
+                    // If login is successful (status code 200), handle the success scenario (e.g., redirect the user)
+                    window.location.href = '/admin/dashboard'; // Replace this with the actual redirect URL for successful login
+                } else if (response.status === 401) {
+                    // If login is unsuccessful (status code 401), show the login failure toast
+                    loginFailureToast.show();
+                } else {
+                    // Handle other status codes as needed
+                    console.error('Unexpected status code:', response.status);
+                }
+            })
+            .catch(error => {
+                // Handle fetch errors, if any
+                loginFailureToast.show();
+                console.error('Fetch error:', error);
+            });
+    };
+
+// Attach the formSubmit function to the form's submit event
+$("#loginForm").on("submit", formSubmit);
+});
+
+function show() {
+      var a = document.getElementById("pwd");
+      var b = document.getElementById("EYE");
+      if (a.type == "password") {
+          a.type = "text";
+          b.src = "/img/icons/show_password.svg";
+      } else {
+          a.type = "password";
+          b.src = "/img/icons/hide_password.svg";
+      }
+  }
+    </script>
+    
+</body>
+
+</html>
