@@ -1,10 +1,12 @@
 package com.example.demo1;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.geometry.Point2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
@@ -30,6 +32,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -51,6 +54,7 @@ public class HelloApplication extends Application {
         // Handle if "totalTimeInWorkZone" is not found or extraction fails
         return "Error: Unable to extract totalTimeInWorkZone";
     }
+
     public String empTimeCal(String empCode, Integer workingTime) {
         String token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2M2NlN2JmZjkzZTkxMzA2N2QwMmNlOGQiLCJlbWFpbCI6InNodWIubWlzaHJhMjIxMEBnbWFpbC5jb20iLCJ0aW1lIjoxNjkxNDg1OTUwMjY5LCJpYXQiOjE2OTE0ODU5NTB9.NazGmjzozuxoMJlPg7nbfYXmXOgOlXjMtwl95Saesiw";
 //        String url = "https://apigateway.erp.chicmic.in/v1/biometric/punches";
@@ -62,7 +66,7 @@ public class HelloApplication extends Application {
             httpPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
             LocalDate date = LocalDate.now();
             // Set the request body
-            String requestBody = "{\"date\": \""+ date.toString() + "\", \"empId\": \"" + empCode + "\"}";
+            String requestBody = "{\"date\": \"" + date.toString() + "\", \"empId\": \"" + empCode + "\"}";
             System.out.println(requestBody);
             httpPost.setEntity(new StringEntity(requestBody));
 
@@ -71,7 +75,7 @@ public class HelloApplication extends Application {
                     HttpEntity responseEntity = response.getEntity();
                     String responseBody = EntityUtils.toString(responseEntity);
                     String totalTimeInWorkZoneStr = extractTotalTime(responseBody);
-                    if(totalTimeInWorkZoneStr == null || totalTimeInWorkZoneStr.isEmpty()) {
+                    if (totalTimeInWorkZoneStr == null || totalTimeInWorkZoneStr.isEmpty()) {
                         totalTimeInWorkZoneStr = "00:00:00";
                     }
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -92,8 +96,7 @@ public class HelloApplication extends Application {
                     String formattedCompletionTimeInputHours = completionTimeInputHours.format(outputFormatter);
                     return formattedCompletionTimeInputHours;
 
-                }
-                else {
+                } else {
                     // Handle non-OK response status
                 }
             }
@@ -106,19 +109,61 @@ public class HelloApplication extends Application {
         // Return appropriate result
         return null;
     }
+    private volatile String remainingTimeStr = "";
+    public String remainingTime(String time) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        LocalTime currentTime = LocalTime.now();
+        LocalTime targetTime = LocalTime.parse(time, formatter);
+
+        if (currentTime.isAfter(targetTime)) {
+            return "0";
+        } else {
+            Duration duration = Duration.between(currentTime, targetTime);
+            long totalSeconds = duration.getSeconds();
+
+            Thread counterThread = new Thread(() -> {
+                for (long seconds = totalSeconds; seconds >= 0; seconds--) {
+                    long hours = seconds / 3600;
+                    long minutes = (seconds % 3600) / 60;
+                    long remainingSeconds = seconds % 60;
+
+                    String remainingTime = String.format("%02d:%02d:%02d", hours, minutes, remainingSeconds);
+
+                    // Update the remainingTime string
+                    synchronized (this) {
+                        remainingTimeStr = remainingTime;
+                    }
+
+                    try {
+                        Thread.sleep(1000); // Wait for one second
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+            counterThread.start();
+            return String.format("%02d:%02d:%02d", duration.toHours(), duration.toMinutesPart(), duration.toSecondsPart());
+        }
+    }
+
     private double offsetX;
     private double offsetY;
     // Add a flag to keep track of the current state
     private boolean iconsVisible = false;
-   @Override
+    private boolean timeVisible = false;
+//    private WebView webView;
+//    private WebEngine webEngine;
+//    private boolean htmlView = false;
+    private boolean flagToggle= false;
+
+    @Override
     public void start(Stage primaryStage) {
 
-        // Create a Stage for the text display on the top bar
         Stage topBarStage = new Stage();
         topBarStage.initStyle(StageStyle.TRANSPARENT);
 
-//       topBarStage.initStyle(StageStyle.UNDECORATED);
-        topBarStage.setAlwaysOnTop(true);
+//        topBarStage.setAlwaysOnTop(true);
         // Set default position to bottom right corner
         double screenWidth = Screen.getPrimary().getBounds().getWidth();
         double screenHeight = Screen.getPrimary().getBounds().getHeight();
@@ -127,12 +172,13 @@ public class HelloApplication extends Application {
         topBarStage.setX(defaultX);
         topBarStage.setY(defaultY);
 
-        // Create the root layout as an AnchorPane
         AnchorPane root = new AnchorPane();
+
         Integer timeField = 8;
-        String empCode = "574";
+        String empCode = "544";
         // Create a Text node to display your text
         String empTime = empTimeCal(empCode, timeField); // Get your text
+        remainingTimeStr = remainingTime(empTime);
         Text helloText = new Text(empTime);
         helloText.setFont(Font.font("Arial", 15)); // Set your desired font and size
         helloText.setFill(Color.WHITE); // Set your desired text color
@@ -143,27 +189,25 @@ public class HelloApplication extends Application {
         AnchorPane.setBottomAnchor(helloText, padding);
         AnchorPane.setRightAnchor(helloText, padding);
 
-        root.getChildren().add(helloText);
+
+        double borderThickness = 1.5;
+        root.setStyle("-fx-border-color: transparent; -fx-border-width: " + borderThickness + "px; -fx-border-radius: 10px; -fx-padding: " + padding + "px;");
+
+        AnchorPane.setLeftAnchor(helloText, padding + borderThickness);
+        AnchorPane.setTopAnchor(helloText, padding + borderThickness);
 
 
 
-       double borderThickness = 1.5;
+        root.setOnMouseEntered(event -> {
+            root.setStyle("-fx-border-color: white; -fx-border-width: " + borderThickness + "px; -fx-border-radius: 10px; -fx-padding: " + padding + "px;");
 
-       root.setStyle("-fx-border-color: transparent; -fx-border-width: " + borderThickness + "px; -fx-border-radius: 10px; -fx-padding: " + padding + "px;");
+        });
+        root.setOnMouseExited(event -> {
+            root.setStyle("-fx-border-color: transparent; -fx-border-width: " + borderThickness + "px; -fx-border-radius: 10px; -fx-padding: " + padding + "px;");
 
-       AnchorPane.setLeftAnchor(helloText, padding + borderThickness);
-       AnchorPane.setTopAnchor(helloText, padding + borderThickness);
+        });
 
-       root.setOnMouseEntered(event -> {
-           root.setStyle("-fx-border-color: white; -fx-border-width: " + borderThickness + "px; -fx-border-radius: 10px; -fx-padding: " + padding + "px;");
-
-       });
-       root.setOnMouseExited(event -> {
-           root.setStyle("-fx-border-color: transparent; -fx-border-width: " + borderThickness + "px; -fx-border-radius: 10px; -fx-padding: " + padding + "px;");
-
-       });
-
-       root.setOnMousePressed(event -> {
+        root.setOnMousePressed(event -> {
             offsetX = event.getSceneX();
             offsetY = event.getSceneY();
         });
@@ -171,92 +215,110 @@ public class HelloApplication extends Application {
             topBarStage.setX(event.getScreenX() - offsetX);
             topBarStage.setY(event.getScreenY() - offsetY);
         });
-//        helloText.setOnMouseClicked(event -> {
-//           SettingsDisplay settingsDisplay = new SettingsDisplay();
-//           settingsDisplay.showSettingsDisplay(event.getScreenX(), event.getScreenY(), empTime);
-//       });
-       // Create two icons (ImageViews) and position them
-       ImageView icon1 = new ImageView(new Image("/input.png")); // Replace with the actual path to your icon image
-       ImageView icon2 = new ImageView(new Image("/settings.png")); // Replace with the actual path to your icon image
+        ImageView icon1 = new ImageView(new Image("/input.png")); // Replace with the actual path to your icon image
+        ImageView icon2 = new ImageView(new Image("/settings.png")); // Replace with the actual path to your icon image
 
-       double iconSize = 25;
-       icon1.setFitWidth(iconSize);
-       icon1.setFitHeight(iconSize);
-       icon2.setFitWidth(iconSize);
-       icon2.setFitHeight(iconSize);
+        double iconSize = 25;
+        icon1.setFitWidth(iconSize);
+        icon1.setFitHeight(iconSize);
+        icon2.setFitWidth(iconSize);
+        icon2.setFitHeight(iconSize);
 
 
-       AnchorPane.setLeftAnchor(icon1, padding + borderThickness);
-       AnchorPane.setTopAnchor(icon1, padding + borderThickness);
+        AnchorPane.setLeftAnchor(icon1, padding + borderThickness);
+        AnchorPane.setTopAnchor(icon1, padding + borderThickness);
 
-       AnchorPane.setRightAnchor(icon2, padding + borderThickness);
-       AnchorPane.setTopAnchor(icon2, padding + borderThickness);
+        AnchorPane.setRightAnchor(icon2, padding + borderThickness);
+        AnchorPane.setTopAnchor(icon2, padding + borderThickness);
 
-       // Hide the icons initially
-       icon1.setVisible(false);
-       icon2.setVisible(false);
-
-       root.getChildren().addAll(icon1, icon2);
-
-       // Add event handler to show/hide icons on mouse click
-       root.setOnMouseClicked(event -> {
-           if (iconsVisible) {
-               // Text box is visible, so hide icons and show text box
-               helloText.setVisible(true);
-               icon1.setVisible(false);
-               icon2.setVisible(false);
-               iconsVisible = false;
-           } else {
-               // Icons are visible, so show icons and hide text box
-               helloText.setVisible(false);
-               icon1.setVisible(true);
-               icon2.setVisible(true);
-               iconsVisible = true;
-           }
-       });
-       VBox gridPaneContainer = new VBox();
-       gridPaneContainer.setVisible(false);
-       gridPaneContainer.setStyle("-fx-background-color: red;");
-       gridPaneContainer.getChildren().addAll(createGridPane());
-       // Create a StackPane to layer nodes
-       StackPane stackPane = new StackPane();
-       stackPane.getChildren().add(gridPaneContainer); // Only add the new container to the stackPane/ Add original layout and new container
+        // Hide the icons initially
+        icon1.setVisible(false);
+        icon2.setVisible(false);
 
 
-       icon1.setOnMouseClicked(event -> {
-           System.out.println("onMouseClicked icon 1");
-//           InputData inputData = showWebView(topBarStage, "/input.html", empCode , String.valueOf(timeField),helloText);
-           gridPaneContainer.setVisible(true); // Toggle visibility
-//           HtmlDialog htmlDialog = new HtmlDialog("/input.html");
-//           htmlDialog.showAndWait();
-//           showWebView("/input.html", helloText);
+        root.setOnMouseClicked(event -> {
+            if(event.getClickCount() == 2){
+                if (iconsVisible) {
+                    // Text box is visible, so hide icons and show text box
+                    helloText.setVisible(true);
+                    icon1.setVisible(false);
+                    icon2.setVisible(false);
+                    iconsVisible = false;
+                } else {
+                    // Icons are visible, so show icons and hide text box
+                    helloText.setVisible(false);
+                    icon1.setVisible(true);
+                    icon2.setVisible(true);
+                    iconsVisible = true;
+                }
+            }else {
+                if (timeVisible) {
+                    helloText.setText(empTime);
+                    timeVisible = false;
+                } else {
+                    helloText.setText(remainingTimeStr);
+                    timeVisible = true;
+                }
+            }
+        });
 
-//           helloText.setVisible(true);
-//           icon1.setVisible(false);
-//           icon2.setVisible(false);
-//           iconsVisible = false;
+        icon1.setOnMouseClicked(event -> {
+//            WebView webView = new WebView();
+            HtmlDialog dialog = new HtmlDialog("/input.html");
+//            webView.getEngine().load(getClass().getResource("/input.html").toExternalForm()); // Replace with your HTML content
+//            webView.setPrefSize(300, 200); // Adjust the size as needed
+//            Scene webViewScene = new Scene(webView);
+//            Stage webViewStage = new Stage();
+//
+//            webViewStage.setScene(webViewScene);
+//
+//            webViewScene.addEventFilter(KeyEvent.KEY_PRESSED, keyEvent -> {
+//                if (keyEvent.getCode() == KeyCode.ENTER) {
+//                    webViewStage.hide();
+//                }
+//            });
+//
+//            webViewStage.show();
+////            topBarStage.hide();
 
-       });
+        });
 
 
-       icon2.setOnMouseClicked(event -> {
-           System.out.println("onMouseClicked icon 2");
-//           InputData inputData = showWebView(topBarStage, "/input.html", empCode , String.valueOf(timeField),helloText);
+        icon2.setOnMouseClicked(event -> {
+            System.out.println("icon2 clicked");
+            Stage settingsStage = new Stage();
+            settingsStage.setTitle("Settings");
 
-           HtmlDialog htmlDialog = new HtmlDialog("/input.html");
-           htmlDialog.showAndWait();
+            AnchorPane settingsRoot = new AnchorPane();
 
-       });
+            // Create a checkbox that automatically fills timesheet
+            CheckBox autoFillCheckbox = new CheckBox("Automatically Fill Timesheet");
+            autoFillCheckbox.setSelected(flagToggle); // Set checkbox state based on flagToggle
+            autoFillCheckbox.setOnAction(checkEvent -> {
+                flagToggle = autoFillCheckbox.isSelected(); // Update flagToggle based on checkbox state
 
-       Scene scene = new Scene(root);
+                // Perform actions based on flagToggle state (e.g., fill timesheet)
+                if (flagToggle) {
+                    // Automatically fill timesheet
+                } else {
+                    // Disable automatic timesheet filling
+                }
+            });
+
+            // Position the autoFillCheckbox within the settingsRoot
+            settingsRoot.getChildren().add(autoFillCheckbox);
+            Scene settingsScene = new Scene(settingsRoot, 400, 300);
+            settingsStage.setScene(settingsScene);
+
+            settingsStage.show();
+        });
+
+        root.getChildren().addAll(icon1, icon2, helloText);
+
+        Scene scene = new Scene(root);
 
         scene.setFill(null);
-       scene.setFill(Color.TRANSPARENT);
-
         topBarStage.setScene(scene);
-
-
-
         topBarStage.show();
 
         primaryStage.setOnCloseRequest(event -> {
@@ -265,65 +327,13 @@ public class HelloApplication extends Application {
             primaryStage.close();
         });
     }
-    private GridPane createGridPane() {
-        // Create a layout for the input form
-        GridPane gridPane = new GridPane();
-        gridPane.setHgap(10);
-        gridPane.setVgap(10);
 
-        Label employeeCodeLabel = new Label("Employee Code:");
-        TextField employeeCodeField = new TextField();
-        Label timeFieldLabel = new Label("Time Field:");
-        TextField timeField = new TextField();
-
-        gridPane.add(employeeCodeLabel, 0, 0);
-        gridPane.add(employeeCodeField, 1, 0);
-        gridPane.add(timeFieldLabel, 0, 1);
-        gridPane.add(timeField, 1, 1);
-
-        // Create a submit button
-        Button submitButton = new Button("Submit");
-
-        // Handle the submit button click event
-        submitButton.setOnAction(event -> {
-            String empCode = employeeCodeField.getText();
-            String time = timeField.getText();
-            // Process the input data as needed
-            System.out.println("Employee Code: " + empCode);
-            System.out.println("Time Field: " + time);
-        });
-
-        gridPane.add(submitButton, 1, 2);
-
-        return gridPane;
-
-    }
-    private void showWebView(String htmlFilePath, Text helloText) {
-
-        HtmlDialog htmlDialog = new HtmlDialog(htmlFilePath);
-        htmlDialog.setDialogSize(300, 200); // Set the size as needed
-
-        // Position the dialog near the original text output
-        Point2D textOutputPosition = helloText.localToScreen(helloText.getBoundsInLocal().getMaxX(), helloText.getBoundsInLocal().getMinY());
-        htmlDialog.setDialogPosition(textOutputPosition.getX(), textOutputPosition.getY());
-
-        // Show the dialog
-        htmlDialog.showAndWait();
-        if (htmlDialog.isEnterPressed()) {
-            String empCode = htmlDialog.getEmpCode();
-            String timeField = htmlDialog.getTimeField();
-            String newEmpTime = empTimeCal(empCode, Integer.valueOf(timeField == null || timeField.isEmpty() ? "0" : timeField));
-            helloText.setText(newEmpTime);
-        }
-    }
-    private InputData showWebView(Stage stage, String htmlFilePath,String defaultEmpCode, String defaultTimeField, Text helloText) {
+    private InputData showWebView(Stage topBarStage, String htmlFilePath, String defaultEmpCode, String defaultTimeField) {
         WebView webView = new WebView();
         WebEngine webEngine = webView.getEngine();
-
-        // Create an instance of the DTO class
+        webEngine.load(getClass().getResource(htmlFilePath).toExternalForm()); // Replace with your HTML content
         InputData inputData = new InputData();
 
-        // Add a listener to retrieve the input field values when the WebView content is ready
         webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue == Worker.State.SUCCEEDED) {
                 // Set the default values in the input fields
@@ -332,23 +342,22 @@ public class HelloApplication extends Application {
             }
         });
 
-        webEngine.load(getClass().getResource(htmlFilePath).toExternalForm());
-        // Set preferred size for the WebView
+
         webView.setPrefSize(300, 200); // Adjust the size as needed
 
-        // Add an event handler for the Enter key press event
+//        AnchorPane anchorPane = new AnchorPane(webView);
+//        anchorPane.setStyle("-fx-background-color: transparent;");
+//        AnchorPane.setTopAnchor(webView, 0.0);
+//        AnchorPane.setBottomAnchor(webView, 0.0);
+//        AnchorPane.setLeftAnchor(webView, 0.0);
+//        AnchorPane.setRightAnchor(webView, 0.0);
 
-
-        AnchorPane anchorPane = new AnchorPane(webView);
-        anchorPane.setStyle("-fx-background-color: transparent;");
-        AnchorPane.setTopAnchor(webView, 0.0);
-        AnchorPane.setBottomAnchor(webView, 0.0);
-        AnchorPane.setLeftAnchor(webView, 0.0);
-        AnchorPane.setRightAnchor(webView, 0.0);
-
-        Scene webViewScene = new Scene(anchorPane);
-
-        stage.setScene(webViewScene);
+        Scene webViewScene = new Scene(webView);
+        Stage webViewStage = new Stage();
+        webViewStage.initStyle(StageStyle.TRANSPARENT);
+        webViewStage.setScene(webViewScene);
+        webViewStage.show();
+        topBarStage.hide();
 
         webView.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ENTER) {
@@ -359,17 +368,10 @@ public class HelloApplication extends Application {
                     inputData.setTimeField(timeFieldResult.toString());
 
                 }
-                event.consume(); // Consume the event to prevent it from being processed further
-                notifyInput(inputData.getEmpCode(), inputData.getTimeField(), helloText, webView, stage);
-            }
-            else if (event.getCode() == KeyCode.CLOSE_BRACKET) {
-                double hiddenX = -1000; // Adjust this value as needed
-                webView.setLayoutX(webView.isVisible() ? hiddenX : 0);
-                webView.setVisible(!webView.isVisible());
-
-                if (!webView.isVisible()) {
-                    webEngine.reload(); // Reload the content when showing the WebView again
-                }
+                webViewStage.hide();
+                topBarStage.show();
+            } else if (event.getCode() == KeyCode.CLOSE_BRACKET) {
+                inputData.setEmpCode("12345");
             }
         });
         return inputData;

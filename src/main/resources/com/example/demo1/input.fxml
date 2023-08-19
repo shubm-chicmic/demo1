@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1">
+    <Label styleClass="header-label" text="Employee Information"/>
+    <TextField id="employeeCode" promptText="Enter employee code"/>
+    <TextField id="timeField" promptText="Enter time"/>
+</VBox>
