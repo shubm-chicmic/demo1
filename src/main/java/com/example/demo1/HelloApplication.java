@@ -215,8 +215,8 @@ public class HelloApplication extends Application {
             topBarStage.setX(event.getScreenX() - offsetX);
             topBarStage.setY(event.getScreenY() - offsetY);
         });
-        ImageView icon1 = new ImageView(new Image("/input.png")); // Replace with the actual path to your icon image
-        ImageView icon2 = new ImageView(new Image("/settings.png")); // Replace with the actual path to your icon image
+        ImageView icon1 = new ImageView(new Image("/log-in.png")); // Replace with the actual path to your icon image
+        ImageView icon2 = new ImageView(new Image("/settings2.png")); // Replace with the actual path to your icon image
 
         double iconSize = 25;
         icon1.setFitWidth(iconSize);
@@ -263,6 +263,7 @@ public class HelloApplication extends Application {
         });
 
         icon1.setOnMouseClicked(event -> {
+            System.out.println("icon1 clicked");
 //            WebView webView = new WebView();
             HtmlDialog dialog = new HtmlDialog("/input.html");
 //            webView.getEngine().load(getClass().getResource("/input.html").toExternalForm()); // Replace with your HTML content
