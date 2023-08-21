@@ -1,24 +1,18 @@
 package com.example.demo1;
 
+
 import javafx.application.Application;
-import javafx.application.Platform;
-import javafx.concurrent.Worker;
-import javafx.geometry.Point2D;
+
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
+
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import javafx.scene.web.WebEngine;
-import javafx.scene.web.WebView;
+
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -31,11 +25,24 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
+import javax.swing.*;
+import javax.swing.text.BadLocationException;
+
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class HelloApplication extends Application {
     public String extractTotalTime(String responseBody) {
@@ -152,11 +159,6 @@ public class HelloApplication extends Application {
     // Add a flag to keep track of the current state
     private boolean iconsVisible = false;
     private boolean timeVisible = false;
-//    private WebView webView;
-//    private WebEngine webEngine;
-//    private boolean htmlView = false;
-    private boolean flagToggle= false;
-
     @Override
     public void start(Stage primaryStage) {
 
@@ -263,55 +265,71 @@ public class HelloApplication extends Application {
         });
 
         icon1.setOnMouseClicked(event -> {
-            System.out.println("icon1 clicked");
-//            WebView webView = new WebView();
-            HtmlDialog dialog = new HtmlDialog("/input.html");
-//            webView.getEngine().load(getClass().getResource("/input.html").toExternalForm()); // Replace with your HTML content
-//            webView.setPrefSize(300, 200); // Adjust the size as needed
-//            Scene webViewScene = new Scene(webView);
-//            Stage webViewStage = new Stage();
+
+            // Create a JEditorPane
+            JEditorPane editorPane = new JEditorPane();
+            editorPane.setContentType("text/html");
+            editorPane.setEditable(false);  // Make it read-only
+
+            try {
+                String path = "/home/chicmic/Desktop/erpShowdesktop/demo1/src/main/resources/input.html";
+                String htmlContent = new String(Files.readAllBytes(Paths.get(path)));
+
+                htmlContent = addAttributeValueToTagById(htmlContent, "input", "employeeCode","value", empCode);
+                htmlContent = addAttributeValueToTagById(htmlContent, "input", "timeField","value", empTime);
+//                System.out.println("\u001B[33m" + htmlContent);
+                editorPane.setText(htmlContent);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            JFrame frame = new JFrame();
+
+            frame.setUndecorated(true);
+
+            int editorWidth = 400; // Adjust the width as needed
+            int editorHeight = 200; // Adjust the height as needed
+            editorPane.setBounds((int) 250, (int) 400, (int) editorWidth, (int) editorHeight);
+
+            frame.setSize(editorWidth, editorHeight);
+            frame.setVisible(true);
+            frame.getContentPane().add(editorPane);
+
+            JButton submitButton = new JButton("Submit Form");
+            editorPane.addKeyListener(new KeyAdapter() {
+                @Override
+                public void keyPressed(KeyEvent e) {
+                    if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                        String htmlContent = editorPane.getText();
+
+                        // Collect the values of empCode and timeField inputs from the HTML content
+                        String newEmpCode = getFormFieldValue(htmlContent, "employeeCode");
+                        String newTimeField = getFormFieldValue(htmlContent, "timeField");
+                        System.out.println("hahahahaha : " + newEmpCode + " " + newTimeField);
+                        frame.setVisible(false); // Close the frame
+                    }
+                }
+            });
+//            submitButton.addActionListener(new ActionListener() {
+//                @Override
+//                public void actionPerformed(ActionEvent e) {
+//                    String empCode = getFormFieldValue(editorPane.getText(), "employeeCode");
+//                    String timeField = getFormFieldValue(editorPane.getText(), "timeField");
 //
-//            webViewStage.setScene(webViewScene);
-//
-//            webViewScene.addEventFilter(KeyEvent.KEY_PRESSED, keyEvent -> {
-//                if (keyEvent.getCode() == KeyCode.ENTER) {
-//                    webViewStage.hide();
+//                    // Update the text or perform any other actions with the form data
+//                    // Example: label.setText("Employee Code: " + empCode + ", Time Field: " + timeField);
 //                }
 //            });
-//
-//            webViewStage.show();
-////            topBarStage.hide();
+
+
 
         });
 
 
         icon2.setOnMouseClicked(event -> {
             System.out.println("icon2 clicked");
-            Stage settingsStage = new Stage();
-            settingsStage.setTitle("Settings");
 
-            AnchorPane settingsRoot = new AnchorPane();
 
-            // Create a checkbox that automatically fills timesheet
-            CheckBox autoFillCheckbox = new CheckBox("Automatically Fill Timesheet");
-            autoFillCheckbox.setSelected(flagToggle); // Set checkbox state based on flagToggle
-            autoFillCheckbox.setOnAction(checkEvent -> {
-                flagToggle = autoFillCheckbox.isSelected(); // Update flagToggle based on checkbox state
-
-                // Perform actions based on flagToggle state (e.g., fill timesheet)
-                if (flagToggle) {
-                    // Automatically fill timesheet
-                } else {
-                    // Disable automatic timesheet filling
-                }
-            });
-
-            // Position the autoFillCheckbox within the settingsRoot
-            settingsRoot.getChildren().add(autoFillCheckbox);
-            Scene settingsScene = new Scene(settingsRoot, 400, 300);
-            settingsStage.setScene(settingsScene);
-
-            settingsStage.show();
         });
 
         root.getChildren().addAll(icon1, icon2, helloText);
@@ -328,66 +346,38 @@ public class HelloApplication extends Application {
             primaryStage.close();
         });
     }
+//    private static String getFormFieldValue(String htmlContent, String fieldName) {
+//        int start = htmlContent.indexOf(fieldName + "\"") + fieldName.length() + 2;
+//        int end = htmlContent.indexOf("\"", start);
+//        return htmlContent.substring(start, end);
+//    }
+    private String getFormFieldValue(String htmlContent, String fieldName) {
+        String pattern = "<input[^>]*id=\"" + fieldName + "\"[^>]*value=\"([^\"]*)\"";
+        Pattern regexPattern = Pattern.compile(pattern);
+        Matcher matcher = regexPattern.matcher(htmlContent);
 
-    private InputData showWebView(Stage topBarStage, String htmlFilePath, String defaultEmpCode, String defaultTimeField) {
-        WebView webView = new WebView();
-        WebEngine webEngine = webView.getEngine();
-        webEngine.load(getClass().getResource(htmlFilePath).toExternalForm()); // Replace with your HTML content
-        InputData inputData = new InputData();
-
-        webEngine.getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue == Worker.State.SUCCEEDED) {
-                // Set the default values in the input fields
-                webEngine.executeScript("document.getElementById('employeeCode').value = '" + defaultEmpCode + "'");
-                webEngine.executeScript("document.getElementById('timeField').value = '" + defaultTimeField + "'");
-            }
-        });
-
-
-        webView.setPrefSize(300, 200); // Adjust the size as needed
-
-//        AnchorPane anchorPane = new AnchorPane(webView);
-//        anchorPane.setStyle("-fx-background-color: transparent;");
-//        AnchorPane.setTopAnchor(webView, 0.0);
-//        AnchorPane.setBottomAnchor(webView, 0.0);
-//        AnchorPane.setLeftAnchor(webView, 0.0);
-//        AnchorPane.setRightAnchor(webView, 0.0);
-
-        Scene webViewScene = new Scene(webView);
-        Stage webViewStage = new Stage();
-        webViewStage.initStyle(StageStyle.TRANSPARENT);
-        webViewStage.setScene(webViewScene);
-        webViewStage.show();
-        topBarStage.hide();
-
-        webView.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode() == KeyCode.ENTER) {
-                Object empCodeResult = webEngine.executeScript("document.getElementById('employeeCode').value");
-                Object timeFieldResult = webEngine.executeScript("document.getElementById('timeField').value");
-                if (empCodeResult != null && timeFieldResult != null) {
-                    inputData.setEmpCode(empCodeResult.toString());
-                    inputData.setTimeField(timeFieldResult.toString());
-
-                }
-                webViewStage.hide();
-                topBarStage.show();
-            } else if (event.getCode() == KeyCode.CLOSE_BRACKET) {
-                inputData.setEmpCode("12345");
-            }
-        });
-        return inputData;
+        if (matcher.find()) {
+            return matcher.group(1);
+        } else {
+            return ""; // Return an empty string if not found
+        }
     }
+    private void executeJavaScript(JEditorPane editorPane, String jsCode) {
 
-
-    private void notifyInput(String empCode, String timeField, Text helloText, WebView webView, Stage stage) {
-        System.out.println("Notify Input: " + empCode);
-        String newEmpTime = empTimeCal(empCode, Integer.valueOf(timeField == null ? "0" : timeField));
-//        helloText.setText(newEmpTime);
-//        webView.setPrefSize(0, 0);
-//        webView.setVisible(false);
-        stage.hide();
     }
+    public static String addAttributeValueToTagById(String htmlContent, String tagName, String id, String attribute, String value) {
+        String tagPattern = "<" + tagName + "\\s+[^>]*?id=\"" + id + "\"[^>]*>";
+        Pattern pattern = Pattern.compile(tagPattern);
+        Matcher matcher = pattern.matcher(htmlContent);
 
+        if (matcher.find()) {
+            String tag = matcher.group();
+            String replacement = tag.replaceFirst(">", " " + attribute + "=\"" + value + "\">");
+            htmlContent = htmlContent.replace(tag, replacement);
+        }
+
+        return htmlContent;
+    }
 
     public static void main(String[] args) throws IOException {
 //        Runtime runtime = Runtime.getRuntime();
