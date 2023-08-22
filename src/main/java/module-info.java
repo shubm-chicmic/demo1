@@ -3,6 +3,7 @@ module com.example.demo1 {
     requires javafx.fxml;
     requires javafx.web;
     requires java.desktop; // Add this line to require the java.desktop module
+//    requires htmlunit; // Add the HtmlUnit library here
 
     requires org.controlsfx.controls;
     requires com.dlsc.formsfx;

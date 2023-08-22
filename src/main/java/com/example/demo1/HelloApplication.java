@@ -1,8 +1,9 @@
 package com.example.demo1;
 
-
 import javafx.application.Application;
 
+import javafx.application.Platform;
+import javafx.geometry.Bounds;
 import javafx.scene.Scene;
 
 import javafx.scene.image.Image;
@@ -13,6 +14,8 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -26,21 +29,16 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import javax.swing.*;
-import javax.swing.text.BadLocationException;
 
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+//import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,7 +60,7 @@ public class HelloApplication extends Application {
         return "Error: Unable to extract totalTimeInWorkZone";
     }
 
-    public String empTimeCal(String empCode, Integer workingTime) {
+    public String empTimeCal(String empCode, String workingTime) {
         String token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2M2NlN2JmZjkzZTkxMzA2N2QwMmNlOGQiLCJlbWFpbCI6InNodWIubWlzaHJhMjIxMEBnbWFpbC5jb20iLCJ0aW1lIjoxNjkxNDg1OTUwMjY5LCJpYXQiOjE2OTE0ODU5NTB9.NazGmjzozuxoMJlPg7nbfYXmXOgOlXjMtwl95Saesiw";
 //        String url = "https://apigateway.erp.chicmic.in/v1/biometric/punches";
         String url = "https://apigateway.erp.chicmic.in/v1/biometric/time-spent";
@@ -88,7 +86,7 @@ public class HelloApplication extends Application {
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
                     LocalTime totalTimeInWorkZone = LocalTime.parse(totalTimeInWorkZoneStr, formatter);
 
-                    LocalTime timeLeftToCompleteInputHours = LocalTime.of(workingTime, 0)
+                    LocalTime timeLeftToCompleteInputHours = LocalTime.of(Integer.parseInt(workingTime), 0)
                             .minusHours(totalTimeInWorkZone.getHour())
                             .minusMinutes(totalTimeInWorkZone.getMinute());
 //                    LocalTime timeLeftToComplete8Hours = LocalTime.of(8, 0)
@@ -116,7 +114,9 @@ public class HelloApplication extends Application {
         // Return appropriate result
         return null;
     }
+
     private volatile String remainingTimeStr = "";
+
     public String remainingTime(String time) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
         LocalTime currentTime = LocalTime.now();
@@ -159,13 +159,13 @@ public class HelloApplication extends Application {
     // Add a flag to keep track of the current state
     private boolean iconsVisible = false;
     private boolean timeVisible = false;
+
     @Override
     public void start(Stage primaryStage) {
 
         Stage topBarStage = new Stage();
         topBarStage.initStyle(StageStyle.TRANSPARENT);
-
-//        topBarStage.setAlwaysOnTop(true);
+        topBarStage.setAlwaysOnTop(true);
         // Set default position to bottom right corner
         double screenWidth = Screen.getPrimary().getBounds().getWidth();
         double screenHeight = Screen.getPrimary().getBounds().getHeight();
@@ -176,12 +176,12 @@ public class HelloApplication extends Application {
 
         AnchorPane root = new AnchorPane();
 
-        Integer timeField = 8;
-        String empCode = "544";
+        String[] timeField = {"8"};
+       String empCode = "574";
         // Create a Text node to display your text
-        String empTime = empTimeCal(empCode, timeField); // Get your text
-        remainingTimeStr = remainingTime(empTime);
-        Text helloText = new Text(empTime);
+        final AtomicReference<String>[] empTime = new AtomicReference[]{new AtomicReference<>(empTimeCal(empCode, timeField[0]))}; // Get your text
+        remainingTimeStr = remainingTime(empTime[0].get());
+        Text helloText = new Text(empTime[0].get());
         helloText.setFont(Font.font("Arial", 15)); // Set your desired font and size
         helloText.setFill(Color.WHITE); // Set your desired text color
 
@@ -197,7 +197,6 @@ public class HelloApplication extends Application {
 
         AnchorPane.setLeftAnchor(helloText, padding + borderThickness);
         AnchorPane.setTopAnchor(helloText, padding + borderThickness);
-
 
 
         root.setOnMouseEntered(event -> {
@@ -238,8 +237,9 @@ public class HelloApplication extends Application {
         icon2.setVisible(false);
 
 
+        String finalEmpTime = empTime[0].get();
         root.setOnMouseClicked(event -> {
-            if(event.getClickCount() == 2){
+            if (event.getClickCount() == 2) {
                 if (iconsVisible) {
                     // Text box is visible, so hide icons and show text box
                     helloText.setVisible(true);
@@ -253,9 +253,9 @@ public class HelloApplication extends Application {
                     icon2.setVisible(true);
                     iconsVisible = true;
                 }
-            }else {
+            } else {
                 if (timeVisible) {
-                    helloText.setText(empTime);
+                    helloText.setText(finalEmpTime);
                     timeVisible = false;
                 } else {
                     helloText.setText(remainingTimeStr);
@@ -265,72 +265,66 @@ public class HelloApplication extends Application {
         });
 
         icon1.setOnMouseClicked(event -> {
+            InputData inputData = new InputData();
+            inputData.setTimeField(timeField[0]);
+            inputData.setEmpCode(empCode);
+            JDialog jDialog = EmployeeForm.showForm(inputData);
+            System.out.println("values in the main : " + inputData.getEmpCode() + " " + inputData.getTimeField());
 
-            // Create a JEditorPane
-            JEditorPane editorPane = new JEditorPane();
-            editorPane.setContentType("text/html");
-            editorPane.setEditable(false);  // Make it read-only
 
-            try {
-                String path = "/home/chicmic/Desktop/erpShowdesktop/demo1/src/main/resources/input.html";
-                String htmlContent = new String(Files.readAllBytes(Paths.get(path)));
+            // Get the bounds of the icon2 in screen coordinates
+            Bounds icon2Bounds = icon2.localToScreen(icon2.getBoundsInLocal());
 
-                htmlContent = addAttributeValueToTagById(htmlContent, "input", "employeeCode","value", empCode);
-                htmlContent = addAttributeValueToTagById(htmlContent, "input", "timeField","value", empTime);
-//                System.out.println("\u001B[33m" + htmlContent);
-                editorPane.setText(htmlContent);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            // Calculate the position for the form just above the icon2
+            double formWidth = 400; // Adjust the width as needed
+            double formHeight = 200; // Adjust the height as needed
+            double formX = icon2Bounds.getMinX(); // X position is same as icon2's left boundary
+            double formY = icon2Bounds.getMinY() - 100; // Y position is just above icon2
 
-            JFrame frame = new JFrame();
+            // Set the position for the form
+            EmployeeForm.setFormPosition(formX, formY);
 
-            frame.setUndecorated(true);
+//            final String updatedEmpCode = inputData.getEmpCode();
+//            final int updatedTimeField = Integer.parseInt(inputData.getTimeField());
+////
+//            // Update helloText with the new empTime
 
-            int editorWidth = 400; // Adjust the width as needed
-            int editorHeight = 200; // Adjust the height as needed
-            editorPane.setBounds((int) 250, (int) 400, (int) editorWidth, (int) editorHeight);
-
-            frame.setSize(editorWidth, editorHeight);
-            frame.setVisible(true);
-            frame.getContentPane().add(editorPane);
-
-            JButton submitButton = new JButton("Submit Form");
-            editorPane.addKeyListener(new KeyAdapter() {
+            jDialog.addWindowListener(new WindowAdapter() {
                 @Override
-                public void keyPressed(KeyEvent e) {
-                    if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                        String htmlContent = editorPane.getText();
+                public void windowClosed(WindowEvent e) {
+                    String updatedEmpCode = inputData.getEmpCode();
+                    timeField[0] = (inputData.getTimeField());
+                    empTime[0].set(empTimeCal(updatedEmpCode, timeField[0]));
+                    System.out.println("updatedEmpCode : " + empCode);
+                    helloText.setText(String.valueOf(empTime[0]));
+                    helloText.setVisible(true);
+                    icon1.setVisible(false);
+                    icon2.setVisible(false);
+                    iconsVisible = false;
+                    timeVisible = false;
 
-                        // Collect the values of empCode and timeField inputs from the HTML content
-                        String newEmpCode = getFormFieldValue(htmlContent, "employeeCode");
-                        String newTimeField = getFormFieldValue(htmlContent, "timeField");
-                        System.out.println("hahahahaha : " + newEmpCode + " " + newTimeField);
-                        frame.setVisible(false); // Close the frame
-                    }
+
                 }
+
+
             });
-//            submitButton.addActionListener(new ActionListener() {
-//                @Override
-//                public void actionPerformed(ActionEvent e) {
-//                    String empCode = getFormFieldValue(editorPane.getText(), "employeeCode");
-//                    String timeField = getFormFieldValue(editorPane.getText(), "timeField");
-//
-//                    // Update the text or perform any other actions with the form data
-//                    // Example: label.setText("Employee Code: " + empCode + ", Time Field: " + timeField);
-//                }
-//            });
-
-
+            Platform.runLater(() -> {
+                helloText.setText(String.valueOf(empTime[0]));
+                helloText.setVisible(true);
+                icon1.setVisible(false);
+                icon2.setVisible(false);
+                iconsVisible = false;
+                timeVisible = false;
+            });
 
         });
-
 
         icon2.setOnMouseClicked(event -> {
-            System.out.println("icon2 clicked");
-
 
         });
+
+
+
 
         root.getChildren().addAll(icon1, icon2, helloText);
 
@@ -344,15 +338,17 @@ public class HelloApplication extends Application {
             topBarStage.close();
             System.exit(0);
             primaryStage.close();
+
         });
     }
-//    private static String getFormFieldValue(String htmlContent, String fieldName) {
+
+    //    private static String getFormFieldValue(String htmlContent, String fieldName) {
 //        int start = htmlContent.indexOf(fieldName + "\"") + fieldName.length() + 2;
 //        int end = htmlContent.indexOf("\"", start);
 //        return htmlContent.substring(start, end);
 //    }
-    private String getFormFieldValue(String htmlContent, String fieldName) {
-        String pattern = "<input[^>]*id=\"" + fieldName + "\"[^>]*value=\"([^\"]*)\"";
+    private String getAttributeValueFromTagById(String htmlContent, String tagName, String id, String attributeName) {
+        String pattern = "<" + tagName + "\\s+[^>]*id=\"" + id + "\"[^>]*" + attributeName + "=\"([^\"]*)\"";
         Pattern regexPattern = Pattern.compile(pattern);
         Matcher matcher = regexPattern.matcher(htmlContent);
 
@@ -362,9 +358,44 @@ public class HelloApplication extends Application {
             return ""; // Return an empty string if not found
         }
     }
+//    public void checkJs(){
+//        try (WebClient webClient = new WebClient()) {
+//            webClient.getOptions().setJavaScriptEnabled(true);  // Enable JavaScript execution
+//
+//            // Load the HTML content
+//            HtmlPage page = null;
+//            page = webClient.getPage("your_html_page_url_here");
+//
+//
+//            // Find the input field by its HTML element name or ID
+//            HtmlInput inputField = page.getFirstByXPath("//input[@name='inputFieldName']");
+//
+//            // Add a change listener to the input field
+////            inputField.addChangeListener(event -> {
+////                System.out.println("Input changed: " + inputField.getValueAttribute());
+////            });
+//
+//            // Wait for user interactions
+//            // ... Your application logic or event loop here ...
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//
+//    }
     private void executeJavaScript(JEditorPane editorPane, String jsCode) {
+        Platform.runLater(() -> {
+            WebView webView = new WebView(); // Create an HTMLEditor
+            WebEngine webEngine = webView.getEngine(); // Get the WebEngine
 
+            // Load a dummy content to the HTMLEditor
+            webEngine.loadContent("<html><head></head><body></body></html>");
+
+            // Execute the JavaScript code
+            webEngine.executeScript(jsCode);
+        });
     }
+
     public static String addAttributeValueToTagById(String htmlContent, String tagName, String id, String attribute, String value) {
         String tagPattern = "<" + tagName + "\\s+[^>]*?id=\"" + id + "\"[^>]*>";
         Pattern pattern = Pattern.compile(tagPattern);
