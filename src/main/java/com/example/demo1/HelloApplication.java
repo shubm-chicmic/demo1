@@ -34,7 +34,6 @@ import javax.swing.*;
 //import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -45,7 +44,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import java.time.LocalTime;
 import java.util.Timer;
 import java.util.TimerTask;
 public class HelloApplication extends Application {
@@ -192,7 +190,7 @@ public class HelloApplication extends Application {
         topBarStage.setY(defaultY);
 
         AnchorPane root = new AnchorPane();
-
+        boolean[] isIcon3Visible = {false};
         // Create a Text node to display your text
         empTime.set(empTimeCal(empCode[0], timeField[0]));
         remainingTimeStr = remainingTime(empTime.get());
@@ -217,6 +215,7 @@ public class HelloApplication extends Application {
 
 
         root.setOnMouseEntered(event -> {
+            if(!isIcon3Visible[0])
             root.setStyle("-fx-border-color: white; -fx-border-width: " + borderThickness + "px; -fx-border-radius: 10px; -fx-padding: " + padding + "px;");
 
         });
@@ -235,12 +234,16 @@ public class HelloApplication extends Application {
         });
         ImageView icon1 = new ImageView(new Image("/log-in.png")); // Replace with the actual path to your icon image
         ImageView icon2 = new ImageView(new Image("/settings2.png")); // Replace with the actual path to your icon image
+        ImageView icon3 = new ImageView(new Image("/alert.gif")); // Replace with the actual path to your icon image
 
         double iconSize = 25;
         icon1.setFitWidth(iconSize);
         icon1.setFitHeight(iconSize);
         icon2.setFitWidth(iconSize);
         icon2.setFitHeight(iconSize);
+        icon3.setFitWidth(iconSize + 10);
+        icon3.setFitHeight(iconSize + 10);
+
 
 
         AnchorPane.setLeftAnchor(icon1, padding + borderThickness);
@@ -249,9 +252,14 @@ public class HelloApplication extends Application {
         AnchorPane.setRightAnchor(icon2, padding + borderThickness);
         AnchorPane.setTopAnchor(icon2, padding + borderThickness);
 
+        AnchorPane.setTopAnchor(icon3, (root.getHeight()) / 2); // Center vertically
+        AnchorPane.setLeftAnchor(icon3, (root.getWidth()) / 2);
+
         // Hide the icons initially
         icon1.setVisible(false);
         icon2.setVisible(false);
+        icon3.setVisible(false);
+
         icon1.setOnMouseClicked(event -> {
 //            System.out.println("\u001B[33m " + timeField + " code : " + empCode[0] + " time : " + empTime );
             InputData inputData = new InputData();
@@ -315,6 +323,16 @@ public class HelloApplication extends Application {
             runner.setAutoUpdateTime(true);
 
         });
+        icon3.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                helloText.setVisible(true);
+                icon1.setVisible(false);
+                icon2.setVisible(false);
+                icon3.setVisible(false);
+                iconsVisible = false;
+                isIcon3Visible[0] = false;
+            }
+        });
 
 
 
@@ -364,13 +382,19 @@ public class HelloApplication extends Application {
                     String response = timeSheetFill.fillTimeSheet(empCode[0], timeField[0]);
                     System.out.println("\u001B[33m response inside the timesheet" + response + "\u001B[0m");
                     conditionTask[0].cancel();
+                    icon3.setVisible(true);
+                    helloText.setVisible(false);
+                    icon1.setVisible(false);
+                    icon2.setVisible(false);
+                    iconsVisible = false;
+                    isIcon3Visible[0] = true;
                 }
             }
         };
         timer.scheduleAtFixedRate(conditionTask[0], 0, 5000);
 
 
-        root.getChildren().addAll(icon1, icon2, helloText);
+        root.getChildren().addAll(icon1, icon2, icon3, helloText);
 
         Scene scene = new Scene(root);
 
