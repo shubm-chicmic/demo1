@@ -1,5 +1,6 @@
 package com.example.demo1;
 
+import com.example.demo1.AutoUpdate.AutoUpdateManager;
 import javafx.application.Application;
 
 import javafx.application.Platform;
@@ -33,17 +34,22 @@ import javax.swing.*;
 //import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.time.LocalTime;
+import java.util.Timer;
+import java.util.TimerTask;
 public class HelloApplication extends Application {
-    public String extractTotalTime(String responseBody) {
+    public static String extractTotalTime(String responseBody) {
         // Find the index of "totalTimeInWorkZone" in the response body
         int totalTimeIndex = responseBody.indexOf("\"totalTimeInWorkZone\":\"");
         if (totalTimeIndex != -1) {
@@ -60,7 +66,7 @@ public class HelloApplication extends Application {
         return "Error: Unable to extract totalTimeInWorkZone";
     }
 
-    public String empTimeCal(String empCode, String workingTime) {
+    public static String empTimeCal(String empCode, String workingTime) {
         String token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2M2NlN2JmZjkzZTkxMzA2N2QwMmNlOGQiLCJlbWFpbCI6InNodWIubWlzaHJhMjIxMEBnbWFpbC5jb20iLCJ0aW1lIjoxNjkxNDg1OTUwMjY5LCJpYXQiOjE2OTE0ODU5NTB9.NazGmjzozuxoMJlPg7nbfYXmXOgOlXjMtwl95Saesiw";
 //        String url = "https://apigateway.erp.chicmic.in/v1/biometric/punches";
         String url = "https://apigateway.erp.chicmic.in/v1/biometric/time-spent";
@@ -127,31 +133,34 @@ public class HelloApplication extends Application {
         } else {
             Duration duration = Duration.between(currentTime, targetTime);
             long totalSeconds = duration.getSeconds();
-
-            Thread counterThread = new Thread(() -> {
-                for (long seconds = totalSeconds; seconds >= 0; seconds--) {
-                    long hours = seconds / 3600;
-                    long minutes = (seconds % 3600) / 60;
-                    long remainingSeconds = seconds % 60;
-
-                    String remainingTime = String.format("%02d:%02d:%02d", hours, minutes, remainingSeconds);
-
-                    // Update the remainingTime string
-                    synchronized (this) {
-                        remainingTimeStr = remainingTime;
-                    }
-
-                    try {
-                        Thread.sleep(1000); // Wait for one second
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-
-            counterThread.start();
+//
+//            Thread counterThread = new Thread(() -> {
+//                for (long seconds = totalSeconds; seconds >= 0; seconds--) {
+//                    long hours = seconds / 3600;
+//                    long minutes = (seconds % 3600) / 60;
+//                    long remainingSeconds = seconds % 60;
+//
+//                    String remainingTime = String.format("%02d:%02d:%02d", hours, minutes, remainingSeconds);
+//
+//                    // Update the remainingTime string
+//                    synchronized (this) {
+//                        remainingTimeStr = remainingTime;
+//                    }
+//
+//                    try {
+//                        Thread.sleep(1000); // Wait for one second
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            });
+//
+//            counterThread.start();
             return String.format("%02d:%02d:%02d", duration.toHours(), duration.toMinutesPart(), duration.toSecondsPart());
         }
+    }
+    public static boolean isFirstTimeGreaterThanSecond(LocalTime firstTime, LocalTime secondTime) {
+        return firstTime.isAfter(secondTime);
     }
 
     private double offsetX;
@@ -159,9 +168,17 @@ public class HelloApplication extends Application {
     // Add a flag to keep track of the current state
     private boolean iconsVisible = false;
     private boolean timeVisible = false;
+    private boolean autoFillTimeSheet = false;
+    public boolean autoUpdateTime = false;
+    public String[] timeField = {"8"};
+    public String[] empCode = {"574"};
+    Text helloText = new Text("");
+    AtomicReference<String> empTime = new AtomicReference<String>("");
 
     @Override
     public void start(Stage primaryStage) {
+        AutoUpdateRunner runner = new AutoUpdateRunner(this);
+        AutoUpdateManager.addPropertyChangeListener(runner);
 
         Stage topBarStage = new Stage();
         topBarStage.initStyle(StageStyle.TRANSPARENT);
@@ -176,12 +193,10 @@ public class HelloApplication extends Application {
 
         AnchorPane root = new AnchorPane();
 
-        String[] timeField = {"8"};
-       String empCode = "574";
         // Create a Text node to display your text
-        final AtomicReference<String>[] empTime = new AtomicReference[]{new AtomicReference<>(empTimeCal(empCode, timeField[0]))}; // Get your text
-        remainingTimeStr = remainingTime(empTime[0].get());
-        Text helloText = new Text(empTime[0].get());
+        empTime.set(empTimeCal(empCode[0], timeField[0]));
+        remainingTimeStr = remainingTime(empTime.get());
+        helloText.setText(empTime.get());
         helloText.setFont(Font.font("Arial", 15)); // Set your desired font and size
         helloText.setFill(Color.WHITE); // Set your desired text color
 
@@ -197,6 +212,8 @@ public class HelloApplication extends Application {
 
         AnchorPane.setLeftAnchor(helloText, padding + borderThickness);
         AnchorPane.setTopAnchor(helloText, padding + borderThickness);
+
+
 
 
         root.setOnMouseEntered(event -> {
@@ -235,39 +252,11 @@ public class HelloApplication extends Application {
         // Hide the icons initially
         icon1.setVisible(false);
         icon2.setVisible(false);
-
-
-        String finalEmpTime = empTime[0].get();
-        root.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) {
-                if (iconsVisible) {
-                    // Text box is visible, so hide icons and show text box
-                    helloText.setVisible(true);
-                    icon1.setVisible(false);
-                    icon2.setVisible(false);
-                    iconsVisible = false;
-                } else {
-                    // Icons are visible, so show icons and hide text box
-                    helloText.setVisible(false);
-                    icon1.setVisible(true);
-                    icon2.setVisible(true);
-                    iconsVisible = true;
-                }
-            } else {
-                if (timeVisible) {
-                    helloText.setText(finalEmpTime);
-                    timeVisible = false;
-                } else {
-                    helloText.setText(remainingTimeStr);
-                    timeVisible = true;
-                }
-            }
-        });
-
         icon1.setOnMouseClicked(event -> {
+//            System.out.println("\u001B[33m " + timeField + " code : " + empCode[0] + " time : " + empTime );
             InputData inputData = new InputData();
             inputData.setTimeField(timeField[0]);
-            inputData.setEmpCode(empCode);
+            inputData.setEmpCode(empCode[0]);
             JDialog jDialog = EmployeeForm.showForm(inputData);
             System.out.println("values in the main : " + inputData.getEmpCode() + " " + inputData.getTimeField());
 
@@ -292,38 +281,93 @@ public class HelloApplication extends Application {
             jDialog.addWindowListener(new WindowAdapter() {
                 @Override
                 public void windowClosed(WindowEvent e) {
-                    String updatedEmpCode = inputData.getEmpCode();
+                    empCode[0] = inputData.getEmpCode();
                     timeField[0] = (inputData.getTimeField());
-                    empTime[0].set(empTimeCal(updatedEmpCode, timeField[0]));
-                    System.out.println("updatedEmpCode : " + empCode);
-                    helloText.setText(String.valueOf(empTime[0]));
+                    empTime.set(empTimeCal(empCode[0], timeField[0]));
+                    remainingTimeStr = remainingTime(empTime.get());
+                    System.out.println("updatedEmpCode : " + empCode[0]);
+                    helloText.setText(String.valueOf(empTime));
                     helloText.setVisible(true);
                     icon1.setVisible(false);
                     icon2.setVisible(false);
                     iconsVisible = false;
                     timeVisible = false;
+                    System.out.println("icon clicked " + helloText.getText());
 
 
                 }
 
 
             });
-            Platform.runLater(() -> {
-                helloText.setText(String.valueOf(empTime[0]));
-                helloText.setVisible(true);
-                icon1.setVisible(false);
-                icon2.setVisible(false);
-                iconsVisible = false;
-                timeVisible = false;
-            });
-
+//            Platform.runLater(() -> {
+//                helloText.setText(String.valueOf(empTime[0]));
+//                helloText.setVisible(true);
+//                icon1.setVisible(false);
+//                icon2.setVisible(false);
+//                iconsVisible = false;
+//                timeVisible = false;
+//            });
+            System.out.println("icon clicked " + helloText.getText());
+            runner.setAutoUpdateTime(false);
         });
 
         icon2.setOnMouseClicked(event -> {
+            runner.setAutoUpdateTime(true);
 
         });
 
 
+
+        root.setOnMouseClicked(event -> {
+//            System.out.println("Mouse clicked " + helloText.getText());
+            if (event.getClickCount() == 2) {
+                if (iconsVisible) {
+                    // Text box is visible, so hide icons and show text box
+                    helloText.setVisible(true);
+                    icon1.setVisible(false);
+                    icon2.setVisible(false);
+                    iconsVisible = false;
+                } else {
+                    // Icons are visible, so show icons and hide text box
+                    helloText.setVisible(false);
+                    icon1.setVisible(true);
+                    icon2.setVisible(true);
+                    iconsVisible = true;
+                }
+            } else {
+                if (timeVisible) {
+                    helloText.setText(String.valueOf(empTime));
+                    timeVisible = false;
+                } else {
+                    helloText.setText(remainingTimeStr);
+                    timeVisible = true;
+                }
+            }
+        });
+//        TimeUpdateScheduler timeUpdateScheduler = new TimeUpdateScheduler();
+//        UpdateTask updateTask = new UpdateTask(this, empCode[0], timeField[0]);
+//        timeUpdateScheduler.startUpdateTask(updateTask);
+        // Register the listener first
+        runner.setAutoUpdateTime(false);
+           // schedule task
+
+        Timer timer = new Timer();
+        final TimerTask[] conditionTask = new TimerTask[1]; // Declare a final array to hold the TimerTask
+
+        conditionTask[0] = new TimerTask() {
+            @Override
+            public void run() {
+                if (isFirstTimeGreaterThanSecond(LocalTime.now(), LocalTime.parse(empTime.get()))) {
+                    System.out.println("Hello text " + helloText.getText());
+
+                    TimeSheetFill timeSheetFill = new TimeSheetFill();
+                    String response = timeSheetFill.fillTimeSheet(empCode[0], timeField[0]);
+                    System.out.println("\u001B[33m response inside the timesheet" + response + "\u001B[0m");
+                    conditionTask[0].cancel();
+                }
+            }
+        };
+        timer.scheduleAtFixedRate(conditionTask[0], 0, 5000);
 
 
         root.getChildren().addAll(icon1, icon2, helloText);
@@ -335,6 +379,8 @@ public class HelloApplication extends Application {
         topBarStage.show();
 
         primaryStage.setOnCloseRequest(event -> {
+            conditionTask[0].cancel();
+            timer.cancel();
             topBarStage.close();
             System.exit(0);
             primaryStage.close();
@@ -358,31 +404,15 @@ public class HelloApplication extends Application {
             return ""; // Return an empty string if not found
         }
     }
-//    public void checkJs(){
-//        try (WebClient webClient = new WebClient()) {
-//            webClient.getOptions().setJavaScriptEnabled(true);  // Enable JavaScript execution
-//
-//            // Load the HTML content
-//            HtmlPage page = null;
-//            page = webClient.getPage("your_html_page_url_here");
-//
-//
-//            // Find the input field by its HTML element name or ID
-//            HtmlInput inputField = page.getFirstByXPath("//input[@name='inputFieldName']");
-//
-//            // Add a change listener to the input field
-////            inputField.addChangeListener(event -> {
-////                System.out.println("Input changed: " + inputField.getValueAttribute());
-////            });
-//
-//            // Wait for user interactions
-//            // ... Your application logic or event loop here ...
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//
-//    }
+    public void updateUIComponents(String updatedEmpTime) {
+        Platform.runLater(() -> {
+            helloText.setText(updatedEmpTime);
+            remainingTimeStr = remainingTime(updatedEmpTime);
+            empTime.set(updatedEmpTime);
+
+        });
+    }
+
     private void executeJavaScript(JEditorPane editorPane, String jsCode) {
         Platform.runLater(() -> {
             WebView webView = new WebView(); // Create an HTMLEditor
