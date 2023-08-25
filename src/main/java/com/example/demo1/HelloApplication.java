@@ -10,9 +10,11 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
 import javafx.scene.web.WebEngine;
@@ -170,6 +172,7 @@ public class HelloApplication extends Application {
     public boolean autoUpdateTime = false;
     public String[] timeField = {"8"};
     public String[] empCode = {"574"};
+    private boolean isDialogVisible = false;
     Text helloText = new Text("");
     AtomicReference<String> empTime = new AtomicReference<String>("");
 
@@ -262,51 +265,53 @@ public class HelloApplication extends Application {
 
         icon1.setOnMouseClicked(event -> {
 //            System.out.println("\u001B[33m " + timeField + " code : " + empCode[0] + " time : " + empTime );
-            InputData inputData = new InputData();
-            inputData.setTimeField(timeField[0]);
-            inputData.setEmpCode(empCode[0]);
-            JDialog jDialog = EmployeeForm.showForm(inputData);
-            System.out.println("values in the main : " + inputData.getEmpCode() + " " + inputData.getTimeField());
+           if(!isDialogVisible) {
+               InputData inputData = new InputData();
+               inputData.setTimeField(timeField[0]);
+               inputData.setEmpCode(empCode[0]);
+               JDialog jDialog = EmployeeForm.showForm(inputData);
+               System.out.println("values in the main : " + inputData.getEmpCode() + " " + inputData.getTimeField());
 
 
-            // Get the bounds of the icon2 in screen coordinates
-            Bounds icon2Bounds = icon2.localToScreen(icon2.getBoundsInLocal());
+               // Get the bounds of the icon2 in screen coordinates
+               Bounds icon2Bounds = icon2.localToScreen(icon2.getBoundsInLocal());
 
-            // Calculate the position for the form just above the icon2
-            double formWidth = 400; // Adjust the width as needed
-            double formHeight = 200; // Adjust the height as needed
-            double formX = icon2Bounds.getMinX(); // X position is same as icon2's left boundary
-            double formY = icon2Bounds.getMinY() - 100; // Y position is just above icon2
+               // Calculate the position for the form just above the icon2
+               double formWidth = 400; // Adjust the width as needed
+               double formHeight = 200; // Adjust the height as needed
+               double formX = icon2Bounds.getMinX(); // X position is same as icon2's left boundary
+               double formY = icon2Bounds.getMinY() - 100; // Y position is just above icon2
 
-            // Set the position for the form
-            EmployeeForm.setFormPosition(formX, formY);
+               // Set the position for the form
+               EmployeeForm.setFormPosition(formX, formY);
 
 //            final String updatedEmpCode = inputData.getEmpCode();
 //            final int updatedTimeField = Integer.parseInt(inputData.getTimeField());
 ////
 //            // Update helloText with the new empTime
 
-            jDialog.addWindowListener(new WindowAdapter() {
-                @Override
-                public void windowClosed(WindowEvent e) {
-                    empCode[0] = inputData.getEmpCode();
-                    timeField[0] = (inputData.getTimeField());
-                    empTime.set(empTimeCal(empCode[0], timeField[0]));
-                    remainingTimeStr = remainingTime(empTime.get());
-                    System.out.println("updatedEmpCode : " + empCode[0]);
-                    helloText.setText(String.valueOf(empTime));
-                    helloText.setVisible(true);
-                    icon1.setVisible(false);
-                    icon2.setVisible(false);
-                    iconsVisible = false;
-                    timeVisible = false;
-                    System.out.println("icon clicked " + helloText.getText());
+               jDialog.addWindowListener(new WindowAdapter() {
+                   @Override
+                   public void windowClosed(WindowEvent e) {
+                       if(inputData.getEmpCode() != empCode[0] && inputData.getTimeField() != timeField[0]) {
+                           empCode[0] = inputData.getEmpCode();
+                           timeField[0] = (inputData.getTimeField());
+                           empTime.set(empTimeCal(empCode[0], timeField[0]));
+                           remainingTimeStr = remainingTime(empTime.get());
+                           System.out.println("updatedEmpCode : " + empCode[0]);
+                           helloText.setText(String.valueOf(empTime));
+                           helloText.setVisible(true);
+                           icon1.setVisible(false);
+                           icon2.setVisible(false);
+                           iconsVisible = false;
+                           timeVisible = false;
+                           System.out.println("icon clicked " + helloText.getText());
+                       }
+
+                   }
 
 
-                }
-
-
-            });
+               });
 //            Platform.runLater(() -> {
 //                helloText.setText(String.valueOf(empTime[0]));
 //                helloText.setVisible(true);
@@ -315,12 +320,16 @@ public class HelloApplication extends Application {
 //                iconsVisible = false;
 //                timeVisible = false;
 //            });
-            System.out.println("icon clicked " + helloText.getText());
-            runner.setAutoUpdateTime(false);
-        });
+               System.out.println("icon clicked " + helloText.getText());
 
+           }else {
+               EmployeeForm.hideForm();
+           }
+           isDialogVisible = !isDialogVisible;
+        });
+//  runner.setAutoUpdateTime(false);
         icon2.setOnMouseClicked(event -> {
-            runner.setAutoUpdateTime(true);
+
 
         });
         icon3.setOnMouseClicked(event -> {
@@ -334,7 +343,13 @@ public class HelloApplication extends Application {
             }
         });
 
-
+//        Text notification = new Text();
+//        notification.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+//        notification.setFill(Color.WHITE);
+//        AnchorPane.setTopAnchor(notification, helloText.getBoundsInParent().getMinY()); // Adjust the top position to align with the existing text
+////        AnchorPane.setLeftAnchor(notification, padding + borderThickness);
+//        root.getChildren().add(notification);
+////        notification.setVisible(false);
 
         root.setOnMouseClicked(event -> {
 //            System.out.println("Mouse clicked " + helloText.getText());
@@ -352,7 +367,19 @@ public class HelloApplication extends Application {
                     icon2.setVisible(true);
                     iconsVisible = true;
                 }
-            } else {
+            }else if (event.getButton() == MouseButton.MIDDLE) {
+                empTime.set(empTimeCal(empCode[0], timeField[0]));
+                remainingTimeStr = remainingTime(empTime.get());
+
+                if(timeVisible) {
+                    helloText.setText(remainingTimeStr);
+                }else {
+                    helloText.setText(empTime.get());
+                }
+                NotificationUtils.showNotification("Refreshed....");
+
+            }
+            else {
                 if (timeVisible) {
                     helloText.setText(String.valueOf(empTime));
                     timeVisible = false;
@@ -362,6 +389,8 @@ public class HelloApplication extends Application {
                 }
             }
         });
+
+
 //        TimeUpdateScheduler timeUpdateScheduler = new TimeUpdateScheduler();
 //        UpdateTask updateTask = new UpdateTask(this, empCode[0], timeField[0]);
 //        timeUpdateScheduler.startUpdateTask(updateTask);
@@ -467,6 +496,8 @@ public class HelloApplication extends Application {
     public static void main(String[] args) throws IOException {
 //        Runtime runtime = Runtime.getRuntime();
 //        runtime.exec("echo '1234' | sudo systemctl poweroff");
+        SystemTrayMenu systemTrayMenu = new SystemTrayMenu();
+        systemTrayMenu.showSystemTray();
         launch(args);
     }
 }

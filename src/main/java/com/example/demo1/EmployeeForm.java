@@ -73,6 +73,9 @@ public class EmployeeForm {
         });
         return jDialog;
     }
+    public static void hideForm(){
+        jDialog.dispose();
+    }
 
     public static void setFormPosition(double x, double y) {
         SwingUtilities.invokeLater(() -> {
@@ -83,8 +86,6 @@ public class EmployeeForm {
     }
 
     private static InputData createAndShowGUI(InputData inputData) {
-        // Set orange theme look and feel
-        // ...
 
         jDialog.setUndecorated(true);
         jDialog.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
