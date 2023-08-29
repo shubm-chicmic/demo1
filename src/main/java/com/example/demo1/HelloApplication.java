@@ -168,7 +168,9 @@ public class HelloApplication extends Application {
     // Add a flag to keep track of the current state
     private boolean iconsVisible = false;
     private boolean timeVisible = false;
-    private boolean autoFillTimeSheet = false;
+    public static boolean autoFillTimeSheet = false;
+    public static boolean autoPCTurnOff = false;
+
     public boolean autoUpdateTime = false;
     public String[] timeField = {"8"};
     public String[] empCode = {"574"};
@@ -498,6 +500,6 @@ public class HelloApplication extends Application {
 //        runtime.exec("echo '1234' | sudo systemctl poweroff");
         SystemTrayMenu systemTrayMenu = new SystemTrayMenu();
         systemTrayMenu.showSystemTray();
-        launch(args);
+//        launch(args);
     }
 }
