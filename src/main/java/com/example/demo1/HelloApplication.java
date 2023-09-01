@@ -1,9 +1,16 @@
 package com.example.demo1;
 
 import com.example.demo1.AutoUpdate.AutoUpdateManager;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.PauseTransition;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.scene.Scene;
 
@@ -14,11 +21,8 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
-import javafx.scene.web.WebEngine;
-import javafx.scene.web.WebView;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -42,9 +46,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
+import java.time.format.DateTimeParseException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -170,7 +173,6 @@ public class HelloApplication extends Application {
     private boolean timeVisible = false;
     public static boolean autoFillTimeSheet = false;
     public static boolean autoPCTurnOff = false;
-
     public boolean autoUpdateTime = false;
     public String[] timeField = {"8"};
     public String[] empCode = {"574"};
@@ -233,9 +235,11 @@ public class HelloApplication extends Application {
             offsetX = event.getSceneX();
             offsetY = event.getSceneY();
         });
+
         root.setOnMouseDragged(event -> {
             topBarStage.setX(event.getScreenX() - offsetX);
             topBarStage.setY(event.getScreenY() - offsetY);
+
         });
         ImageView icon1 = new ImageView(new Image("/log-in.png")); // Replace with the actual path to your icon image
         ImageView icon2 = new ImageView(new Image("/settings2.png")); // Replace with the actual path to your icon image
@@ -273,25 +277,15 @@ public class HelloApplication extends Application {
                inputData.setEmpCode(empCode[0]);
                JDialog jDialog = EmployeeForm.showForm(inputData);
                System.out.println("values in the main : " + inputData.getEmpCode() + " " + inputData.getTimeField());
-
-
-               // Get the bounds of the icon2 in screen coordinates
                Bounds icon2Bounds = icon2.localToScreen(icon2.getBoundsInLocal());
 
-               // Calculate the position for the form just above the icon2
-               double formWidth = 400; // Adjust the width as needed
-               double formHeight = 200; // Adjust the height as needed
-               double formX = icon2Bounds.getMinX(); // X position is same as icon2's left boundary
-               double formY = icon2Bounds.getMinY() - 100; // Y position is just above icon2
+               double formWidth = 400;
+               double formHeight = 200;
+               double formX = icon2Bounds.getMinX();
+               double formY = icon2Bounds.getMinY() - 100;
 
                // Set the position for the form
                EmployeeForm.setFormPosition(formX, formY);
-
-//            final String updatedEmpCode = inputData.getEmpCode();
-//            final int updatedTimeField = Integer.parseInt(inputData.getTimeField());
-////
-//            // Update helloText with the new empTime
-
                jDialog.addWindowListener(new WindowAdapter() {
                    @Override
                    public void windowClosed(WindowEvent e) {
@@ -344,14 +338,6 @@ public class HelloApplication extends Application {
                 isIcon3Visible[0] = false;
             }
         });
-
-//        Text notification = new Text();
-//        notification.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-//        notification.setFill(Color.WHITE);
-//        AnchorPane.setTopAnchor(notification, helloText.getBoundsInParent().getMinY()); // Adjust the top position to align with the existing text
-////        AnchorPane.setLeftAnchor(notification, padding + borderThickness);
-//        root.getChildren().add(notification);
-////        notification.setVisible(false);
 
         root.setOnMouseClicked(event -> {
 //            System.out.println("Mouse clicked " + helloText.getText());
@@ -443,22 +429,6 @@ public class HelloApplication extends Application {
         });
     }
 
-    //    private static String getFormFieldValue(String htmlContent, String fieldName) {
-//        int start = htmlContent.indexOf(fieldName + "\"") + fieldName.length() + 2;
-//        int end = htmlContent.indexOf("\"", start);
-//        return htmlContent.substring(start, end);
-//    }
-    private String getAttributeValueFromTagById(String htmlContent, String tagName, String id, String attributeName) {
-        String pattern = "<" + tagName + "\\s+[^>]*id=\"" + id + "\"[^>]*" + attributeName + "=\"([^\"]*)\"";
-        Pattern regexPattern = Pattern.compile(pattern);
-        Matcher matcher = regexPattern.matcher(htmlContent);
-
-        if (matcher.find()) {
-            return matcher.group(1);
-        } else {
-            return ""; // Return an empty string if not found
-        }
-    }
     public void updateUIComponents(String updatedEmpTime) {
         Platform.runLater(() -> {
             helloText.setText(updatedEmpTime);
@@ -467,39 +437,61 @@ public class HelloApplication extends Application {
 
         });
     }
+    private volatile boolean timerRunning = false; // Flag to indicate whether the timer is running
+    private Thread countdownThread; // Thread for the countdown
 
-    private void executeJavaScript(JEditorPane editorPane, String jsCode) {
-        Platform.runLater(() -> {
-            WebView webView = new WebView(); // Create an HTMLEditor
-            WebEngine webEngine = webView.getEngine(); // Get the WebEngine
+    private void startTimer() {
+        if (!timerRunning) {
+            timerRunning = true;
+            countdownThread = new Thread(() -> {
+                while (!remainingTimeStr.equals("00:00:00") && timerRunning) {
+                    try {
+                        Thread.sleep(1000); // Sleep for 1 second
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
 
-            // Load a dummy content to the HTMLEditor
-            webEngine.loadContent("<html><head></head><body></body></html>");
-
-            // Execute the JavaScript code
-            webEngine.executeScript(jsCode);
-        });
-    }
-
-    public static String addAttributeValueToTagById(String htmlContent, String tagName, String id, String attribute, String value) {
-        String tagPattern = "<" + tagName + "\\s+[^>]*?id=\"" + id + "\"[^>]*>";
-        Pattern pattern = Pattern.compile(tagPattern);
-        Matcher matcher = pattern.matcher(htmlContent);
-
-        if (matcher.find()) {
-            String tag = matcher.group();
-            String replacement = tag.replaceFirst(">", " " + attribute + "=\"" + value + "\">");
-            htmlContent = htmlContent.replace(tag, replacement);
+                    // Update UI components on the JavaFX Application thread
+                    Platform.runLater(() -> {
+                        remainingTimeStr = subtractOneSecondFromTime(remainingTimeStr);
+                        helloText.setText(remainingTimeStr);
+                    });
+                }
+                timerRunning = false;
+            });
+            countdownThread.start();
         }
-
-        return htmlContent;
     }
+
+    private void stopTimer() {
+        if (timerRunning) {
+            timerRunning = false;
+            try {
+                countdownThread.join(); // Wait for the countdown thread to finish
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public static String subtractOneSecondFromTime(String timeStr) {
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+            LocalTime time = LocalTime.parse(timeStr, formatter);
+            time = time.minusSeconds(1);
+            return time.format(formatter);
+        } catch (DateTimeParseException e) {
+            e.printStackTrace();
+            return "Invalid Time Format";
+        }
+    }
+
 
     public static void main(String[] args) throws IOException {
 //        Runtime runtime = Runtime.getRuntime();
 //        runtime.exec("echo '1234' | sudo systemctl poweroff");
         SystemTrayMenu systemTrayMenu = new SystemTrayMenu();
         systemTrayMenu.showSystemTray();
-//        launch(args);
+        launch(args);
     }
 }

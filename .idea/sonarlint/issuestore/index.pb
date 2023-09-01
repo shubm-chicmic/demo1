@@ -1,8 +1,6 @@
 
 a
 1src/main/java/com/example/demo1/TimePunchApi.java,8/3/83c105c77966ba2fcaa71a3128ff5232492819ed
-h
-8src/main/java/com/example/demo1/TimeUpdateScheduler.java,5/9/59b657dc1b893d5903a1d2a125a8e710f991f4ae
 q
 Asrc/main/java/com/example/demo1/AutoUpdate/AutoUpdateManager.java,9/6/96fe699a226e46c7739f7209badc8df7828c479e
 e
@@ -29,13 +27,19 @@ Q.idea/sonarlint/securityhotspotstore/7/d/7dfe2fdcbae558dbdd29bff7b793110f08a66d
 Q.idea/sonarlint/securityhotspotstore/5/b/5b85b4c466b1c04af3a8235161bf56bc224531f7,f/e/fe649eb663080eccb918fb922de72db9469cb30d
 a
 1src/main/java/com/example/demo1/EmployeeForm.java,d/b/db0acbdeb874aa284c1246315bc0b18c318ae680
-N
-src/main/java/module-info.java,1/c/1c89a5491fbfda3fb050196d6a239f20200296e7
 f
 6src/main/java/com/example/demo1/NotificationUtils.java,a/2/a27ee25d3abd81ae43b692ba5d5bbc6594f82904
-7
-pom.xml,4/4/442292b8a7efeabbe4cc176709b833b1792140ec
 _
 /src/main/java/com/example/demo1/ChatGptApi.java,c/2/c275f0343109972cddfe248db5c6ce93af90d1ef
 b
 2src/main/java/com/example/demo1/TimeSheetFill.java,7/5/7574fc88ba183b99861e261aed0490c049ca6532
+c
+3src/main/java/com/example/demo1/SystemTrayMenu.java,a/5/a50828ad924a7efdd2c29342d544b4109939aecb
+h
+8src/main/java/com/example/demo1/TimeUpdateScheduler.java,5/9/59b657dc1b893d5903a1d2a125a8e710f991f4ae
+7
+pom.xml,4/4/442292b8a7efeabbe4cc176709b833b1792140ec
+N
+src/main/java/module-info.java,1/c/1c89a5491fbfda3fb050196d6a239f20200296e7
+e
+5src/main/java/com/example/demo1/HelloApplication.java,e/7/e7d3e1521a7f9050dfc0291d2fc8b81124ce4cd0

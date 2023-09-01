@@ -17,6 +17,7 @@ module com.example.demo1 {
     requires org.json;
 
     requires com.jfoenix;
+    requires javafx.swing;
 
     opens com.example.demo1 to javafx.fxml;
     exports com.example.demo1;
