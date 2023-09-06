@@ -1,0 +1,2 @@
+autoFillTimeSheet=true
+autoPCTurnOff=false

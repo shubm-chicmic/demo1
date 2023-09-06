@@ -10,10 +10,7 @@ import java.awt.*;
 import java.awt.event.*;
 
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -51,13 +48,13 @@ public class SystemTrayMenu {
             MenuItem exitMenuItem = new MenuItem("Exit");
 
             // Add menu items to the popup menu
-            PopupMenu popupMenu = new PopupMenu();
-//            popupMenu.add(menuItem1);
-//            popupMenu.add(menuItem2);
-//            popupMenu.add(menuItem3);
-//            popupMenu.addSeparator();
-            popupMenu.add(exitMenuItem);
-            trayIcon.setPopupMenu(popupMenu);
+//            PopupMenu popupMenu = new PopupMenu();
+//            popupMenu.add(menuItem);
+////            popupMenu.add(menuItem2);
+////            popupMenu.add(menuItem3);
+////            popupMenu.addSeparator();
+//            popupMenu.add(exitMenuItem);
+//            trayIcon.setPopupMenu(popupMenu);
 
             try {
                 tray.add(trayIcon);
@@ -182,8 +179,11 @@ public class SystemTrayMenu {
                 // Update the corresponding boolean variable based on the menu item and selection
                 if (!item.getLabel().equals("PC Turn Off")) {
                     HelloApplication.autoFillTimeSheet = setToActive;
+                    HelloApplication.updateCacheFile("autoFillTimeSheet", setToActive);
                 } else {
                     HelloApplication.autoPCTurnOff = setToActive;
+                    HelloApplication.updateCacheFile("autoPCTurnOff", setToActive);
+
                 }
             };
 
@@ -204,6 +204,12 @@ public class SystemTrayMenu {
                     }
                     if (SwingUtilities.isRightMouseButton(e)) {
                         // Handle right-click on the label
+//                        JPopupMenu fillTimeSheetMenu = createFillTimeSheetMenu();
+//                        fillTimeSheetMenu.show(label, 25, -fillTimeSheetMenu.getHeight());
+                        JScrollPane editorPane = createFillTimeSheetEditor();
+                        JOptionPane.showMessageDialog(null, editorPane, "Fill Time Sheet", JOptionPane.PLAIN_MESSAGE);
+
+
                     }
                 }
 
@@ -242,6 +248,56 @@ public class SystemTrayMenu {
         label.setOpaque(true);
         label.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
         return label;
+    }
+//    private JPopupMenu createFillTimeSheetMenu() {
+//        JPopupMenu fillTimeSheetMenu = new JPopupMenu();
+//        // Add items to the "Fill Time Sheet" menu as needed
+//        JMenuItem item1 = new JMenuItem("Fill Time Sheet");
+////        JMenuItem item2 = new JMenuItem("Item 2");
+//        // Add action listeners for these items if necessary
+//        fillTimeSheetMenu.add(item1);
+////        fillTimeSheetMenu.add(item2);
+//        return fillTimeSheetMenu;
+//    }
+private JScrollPane createFillTimeSheetEditor() {
+    JTextPane editor = new JTextPane();
+    editor.setEditable(true);
+    JScrollPane scrollPane = new JScrollPane(editor);
+
+    // Add a "Save" button to save the content to a file
+    JButton saveButton = new JButton("Save");
+    saveButton.addActionListener(new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            String text = editor.getText();
+            saveTextToFile(text);
+        }
+    });
+
+    // Add the "Save" button to the editor
+    JPanel editorPanel = new JPanel();
+    editorPanel.setLayout(new BorderLayout());
+    editorPanel.add(scrollPane, BorderLayout.CENTER);
+    editorPanel.add(saveButton, BorderLayout.SOUTH);
+
+    return new JScrollPane(editorPanel);
+}
+
+    // Add this method to save the text to a file
+    private void saveTextToFile(String text) {
+        try {
+            File desktopDir = new File(System.getProperty("user.home"), "Desktop");
+            File file = new File(desktopDir, "erpTimeSheetInput.txt");
+
+            BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+            writer.write(text);
+            writer.close();
+
+            JOptionPane.showMessageDialog(null, "Text saved to 'erpTimeSheetInput.txt' on the desktop.");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Error saving text to file.");
+        }
     }
 
     private static class RoundedBorder implements Border {

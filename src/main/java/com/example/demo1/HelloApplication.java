@@ -40,7 +40,7 @@ import javax.swing.*;
 //import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.IOException;
+import java.io.*;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -51,6 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import java.util.Timer;
 import java.util.TimerTask;
+
 public class HelloApplication extends Application {
     public static String extractTotalTime(String responseBody) {
         // Find the index of "totalTimeInWorkZone" in the response body
@@ -162,6 +163,7 @@ public class HelloApplication extends Application {
             return String.format("%02d:%02d:%02d", duration.toHours(), duration.toMinutesPart(), duration.toSecondsPart());
         }
     }
+
     public static boolean isFirstTimeGreaterThanSecond(LocalTime firstTime, LocalTime secondTime) {
         return firstTime.isAfter(secondTime);
     }
@@ -219,11 +221,9 @@ public class HelloApplication extends Application {
         AnchorPane.setTopAnchor(helloText, padding + borderThickness);
 
 
-
-
         root.setOnMouseEntered(event -> {
-            if(!isIcon3Visible[0])
-            root.setStyle("-fx-border-color: white; -fx-border-width: " + borderThickness + "px; -fx-border-radius: 10px; -fx-padding: " + padding + "px;");
+            if (!isIcon3Visible[0])
+                root.setStyle("-fx-border-color: white; -fx-border-width: " + borderThickness + "px; -fx-border-radius: 10px; -fx-padding: " + padding + "px;");
 
         });
         root.setOnMouseExited(event -> {
@@ -254,7 +254,6 @@ public class HelloApplication extends Application {
         icon3.setFitHeight(iconSize + 10);
 
 
-
         AnchorPane.setLeftAnchor(icon1, padding + borderThickness);
         AnchorPane.setTopAnchor(icon1, padding + borderThickness);
 
@@ -271,43 +270,43 @@ public class HelloApplication extends Application {
 
         icon1.setOnMouseClicked(event -> {
 //            System.out.println("\u001B[33m " + timeField + " code : " + empCode[0] + " time : " + empTime );
-           if(!isDialogVisible) {
-               InputData inputData = new InputData();
-               inputData.setTimeField(timeField[0]);
-               inputData.setEmpCode(empCode[0]);
-               JDialog jDialog = EmployeeForm.showForm(inputData);
-               System.out.println("values in the main : " + inputData.getEmpCode() + " " + inputData.getTimeField());
-               Bounds icon2Bounds = icon2.localToScreen(icon2.getBoundsInLocal());
+            if (!isDialogVisible) {
+                InputData inputData = new InputData();
+                inputData.setTimeField(timeField[0]);
+                inputData.setEmpCode(empCode[0]);
+                JDialog jDialog = EmployeeForm.showForm(inputData);
+                System.out.println("values in the main : " + inputData.getEmpCode() + " " + inputData.getTimeField());
+                Bounds icon2Bounds = icon2.localToScreen(icon2.getBoundsInLocal());
 
-               double formWidth = 400;
-               double formHeight = 200;
-               double formX = icon2Bounds.getMinX();
-               double formY = icon2Bounds.getMinY() - 100;
+                double formWidth = 400;
+                double formHeight = 200;
+                double formX = icon2Bounds.getMinX();
+                double formY = icon2Bounds.getMinY() - 100;
 
-               // Set the position for the form
-               EmployeeForm.setFormPosition(formX, formY);
-               jDialog.addWindowListener(new WindowAdapter() {
-                   @Override
-                   public void windowClosed(WindowEvent e) {
-                       if(inputData.getEmpCode() != empCode[0] && inputData.getTimeField() != timeField[0]) {
-                           empCode[0] = inputData.getEmpCode();
-                           timeField[0] = (inputData.getTimeField());
-                           empTime.set(empTimeCal(empCode[0], timeField[0]));
-                           remainingTimeStr = remainingTime(empTime.get());
-                           System.out.println("updatedEmpCode : " + empCode[0]);
-                           helloText.setText(String.valueOf(empTime));
-                           helloText.setVisible(true);
-                           icon1.setVisible(false);
-                           icon2.setVisible(false);
-                           iconsVisible = false;
-                           timeVisible = false;
-                           System.out.println("icon clicked " + helloText.getText());
-                       }
+                // Set the position for the form
+                EmployeeForm.setFormPosition(formX, formY);
+                jDialog.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosed(WindowEvent e) {
+                        if (inputData.getEmpCode() != empCode[0] && inputData.getTimeField() != timeField[0]) {
+                            empCode[0] = inputData.getEmpCode();
+                            timeField[0] = (inputData.getTimeField());
+                            empTime.set(empTimeCal(empCode[0], timeField[0]));
+                            remainingTimeStr = remainingTime(empTime.get());
+                            System.out.println("updatedEmpCode : " + empCode[0]);
+                            helloText.setText(String.valueOf(empTime));
+                            helloText.setVisible(true);
+                            icon1.setVisible(false);
+                            icon2.setVisible(false);
+                            iconsVisible = false;
+                            timeVisible = false;
+                            System.out.println("icon clicked " + helloText.getText());
+                        }
 
-                   }
+                    }
 
 
-               });
+                });
 //            Platform.runLater(() -> {
 //                helloText.setText(String.valueOf(empTime[0]));
 //                helloText.setVisible(true);
@@ -316,12 +315,12 @@ public class HelloApplication extends Application {
 //                iconsVisible = false;
 //                timeVisible = false;
 //            });
-               System.out.println("icon clicked " + helloText.getText());
+                System.out.println("icon clicked " + helloText.getText());
 
-           }else {
-               EmployeeForm.hideForm();
-           }
-           isDialogVisible = !isDialogVisible;
+            } else {
+                EmployeeForm.hideForm();
+            }
+            isDialogVisible = !isDialogVisible;
         });
 //  runner.setAutoUpdateTime(false);
         icon2.setOnMouseClicked(event -> {
@@ -355,25 +354,40 @@ public class HelloApplication extends Application {
                     icon2.setVisible(true);
                     iconsVisible = true;
                 }
-            }else if (event.getButton() == MouseButton.MIDDLE) {
+            } else if (event.getButton() == MouseButton.MIDDLE) {
                 empTime.set(empTimeCal(empCode[0], timeField[0]));
                 remainingTimeStr = remainingTime(empTime.get());
 
-                if(timeVisible) {
+                if (timeVisible) {
                     helloText.setText(remainingTimeStr);
-                }else {
+                } else {
                     helloText.setText(empTime.get());
                 }
                 NotificationUtils.showNotification("Refreshed....");
 
-            }
-            else {
+            } else {
                 if (timeVisible) {
+                    System.out.println("clicked to get the correct time");
+                    stopTimer();
+                    while (countdownThread.isAlive()) {
+                        try {
+                            Thread.sleep(10); // Wait for a very short time
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
                     helloText.setText(String.valueOf(empTime));
+                    System.out.println("condition2 reached " + helloText.getText());
+
                     timeVisible = false;
+
                 } else {
+                    System.out.println("condition reset reached");
+
                     helloText.setText(remainingTimeStr);
                     timeVisible = true;
+                    startTimer();
                 }
             }
         });
@@ -384,7 +398,7 @@ public class HelloApplication extends Application {
 //        timeUpdateScheduler.startUpdateTask(updateTask);
         // Register the listener first
         runner.setAutoUpdateTime(false);
-           // schedule task
+        // schedule task
 
         Timer timer = new Timer();
         final TimerTask[] conditionTask = new TimerTask[1]; // Declare a final array to hold the TimerTask
@@ -392,7 +406,7 @@ public class HelloApplication extends Application {
         conditionTask[0] = new TimerTask() {
             @Override
             public void run() {
-                if (isFirstTimeGreaterThanSecond(LocalTime.now(), LocalTime.parse(empTime.get()))) {
+                if (autoFillTimeSheet && isFirstTimeGreaterThanSecond(LocalTime.now(), LocalTime.parse(empTime.get()))) {
                     System.out.println("Hello text " + helloText.getText());
 
                     TimeSheetFill timeSheetFill = new TimeSheetFill();
@@ -437,6 +451,7 @@ public class HelloApplication extends Application {
 
         });
     }
+
     private volatile boolean timerRunning = false; // Flag to indicate whether the timer is running
     private Thread countdownThread; // Thread for the countdown
 
@@ -451,12 +466,10 @@ public class HelloApplication extends Application {
                         e.printStackTrace();
                     }
 
-                    // Update UI components on the JavaFX Application thread
-                    Platform.runLater(() -> {
-                        remainingTimeStr = subtractOneSecondFromTime(remainingTimeStr);
-                        helloText.setText(remainingTimeStr);
-                    });
+                    remainingTimeStr = subtractOneSecondFromTime(remainingTimeStr);
+                    helloText.setText(remainingTimeStr);
                 }
+                System.out.println("\u001B[33m Thread is stopped :-: \u001B[0m");
                 timerRunning = false;
             });
             countdownThread.start();
@@ -466,11 +479,7 @@ public class HelloApplication extends Application {
     private void stopTimer() {
         if (timerRunning) {
             timerRunning = false;
-            try {
-                countdownThread.join(); // Wait for the countdown thread to finish
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+
         }
     }
 
@@ -485,13 +494,107 @@ public class HelloApplication extends Application {
             return "Invalid Time Format";
         }
     }
+    public static String subtractOneMinuteFromTime(String timeStr) {
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+            LocalTime time = LocalTime.parse(timeStr, formatter);
+            time = time.minusMinutes(1);
+            return time.format(formatter);
+        } catch (DateTimeParseException e) {
+            e.printStackTrace();
+            return "Invalid Time Format";
+        }
+    }
+
+
+    private static void readCacheFile() {
+        File cacheFile = new File("cache.txt");
+
+        if (!cacheFile.exists()) {
+            // If the cache file doesn't exist, create it with default values
+            createDefaultCacheFile(cacheFile);
+        } else {
+            try {
+                BufferedReader reader = new BufferedReader(new FileReader(cacheFile));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.split("=");
+                    if (parts.length == 2) {
+                        String variableName = parts[0].trim();
+                        boolean value = Boolean.parseBoolean(parts[1].trim());
+                        // Set the boolean variables based on the variableName
+                        switch (variableName) {
+                            case "autoFillTimeSheet":
+                                autoFillTimeSheet = value;
+                                break;
+                            case "autoPCTurnOff":
+                                autoPCTurnOff = value;
+                                break;
+                            // Add more cases if you have more boolean variables
+                        }
+                    }
+                }
+                reader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                // Handle file reading errors if necessary
+            }
+        }
+    }
+
+    private static void createDefaultCacheFile(File cacheFile) {
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(cacheFile));
+            // Write default boolean values to the cache file
+            writer.write("autoFillTimeSheet=false");
+            writer.newLine();
+            writer.write("autoPCTurnOff=false");
+            // Add more lines for other boolean variables with default values if needed
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Handle file writing errors if necessary
+        }
+    }
+
+    public static void updateCacheFile(String key, boolean value) {
+        try {
+            File cacheFile = new File("cache.txt");
+            BufferedReader reader = new BufferedReader(new FileReader(cacheFile));
+            StringBuilder newContent = new StringBuilder();
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split("=");
+                if (parts.length == 2) {
+                    String variableName = parts[0].trim();
+                    if (variableName.equals(key)) {
+                        // Update the value for the specified key
+                        line = key + "=" + value;
+                    }
+                }
+                newContent.append(line).append(System.lineSeparator());
+            }
+            reader.close();
+
+            // Write the updated content back to the cache file
+            BufferedWriter writer = new BufferedWriter(new FileWriter(cacheFile));
+            writer.write(newContent.toString());
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Handle file reading/writing errors if necessary
+        }
+    }
 
 
     public static void main(String[] args) throws IOException {
+        readCacheFile();
 //        Runtime runtime = Runtime.getRuntime();
 //        runtime.exec("echo '1234' | sudo systemctl poweroff");
         SystemTrayMenu systemTrayMenu = new SystemTrayMenu();
         systemTrayMenu.showSystemTray();
+
         launch(args);
     }
 }
