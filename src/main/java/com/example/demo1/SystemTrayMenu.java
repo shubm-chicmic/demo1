@@ -203,12 +203,16 @@ public class SystemTrayMenu {
                         dropdownMenu.show(label, 0, label.getHeight());
                     }
                     if (SwingUtilities.isRightMouseButton(e)) {
-                        // Handle right-click on the label
+                        if(item.getLabel().equals("PC Turn Off")){
+
+                        }
+                        else {
+                            // Handle right-click on the label
 //                        JPopupMenu fillTimeSheetMenu = createFillTimeSheetMenu();
 //                        fillTimeSheetMenu.show(label, 25, -fillTimeSheetMenu.getHeight());
-                        JScrollPane editorPane = createFillTimeSheetEditor();
-                        JOptionPane.showMessageDialog(null, editorPane, "Fill Time Sheet", JOptionPane.PLAIN_MESSAGE);
-
+                            JScrollPane editorPane = createFillTimeSheetEditor();
+                            JOptionPane.showMessageDialog(null, editorPane, "Fill Time Sheet", JOptionPane.PLAIN_MESSAGE);
+                        }
 
                     }
                 }

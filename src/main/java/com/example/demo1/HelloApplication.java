@@ -175,6 +175,7 @@ public class HelloApplication extends Application {
     private boolean timeVisible = false;
     public static boolean autoFillTimeSheet = false;
     public static boolean autoPCTurnOff = false;
+    public static Double pcTurnoffMinutes = 1.0;
     public boolean autoUpdateTime = false;
     public String[] timeField = {"8"};
     public String[] empCode = {"574"};
@@ -419,6 +420,9 @@ public class HelloApplication extends Application {
                     icon2.setVisible(false);
                     iconsVisible = false;
                     isIcon3Visible[0] = true;
+                    if(autoPCTurnOff){
+                     scheduleSystemShutdown(pcTurnoffMinutes, empTime.get());
+                    }
                 }
             }
         };
@@ -494,17 +498,22 @@ public class HelloApplication extends Application {
             return "Invalid Time Format";
         }
     }
-    public static String subtractOneMinuteFromTime(String timeStr) {
+    public static String addMinutesToTime(String timeStr, double minutes) {
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
             LocalTime time = LocalTime.parse(timeStr, formatter);
-            time = time.minusMinutes(1);
+
+            // Convert the fraction of minutes to seconds and add it to the time
+            long secondsToAdd = (long) (minutes * 60);
+            time = time.plusSeconds(secondsToAdd);
+
             return time.format(formatter);
         } catch (DateTimeParseException e) {
             e.printStackTrace();
             return "Invalid Time Format";
         }
     }
+
 
 
     private static void readCacheFile() {
@@ -586,6 +595,76 @@ public class HelloApplication extends Application {
             // Handle file reading/writing errors if necessary
         }
     }
+    public static void scheduleSystemShutdown(double minutes, String empTime) {
+        try {
+            // Convert minutes to seconds
+            int seconds = (int) (minutes * 60);
+
+            // Get the current time
+            LocalTime currentTime = LocalTime.now();
+
+            // Calculate the final shutdown time
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+            LocalTime scheduledShutdownTime = LocalTime.parse(empTime, formatter).plusSeconds(seconds);
+
+            // Check if the current time is greater than the scheduled shutdown time
+            if (currentTime.isAfter(scheduledShutdownTime)) {
+                // Adjust empTime to be 1 minute from the current time
+                scheduledShutdownTime = currentTime.plusMinutes(1);
+            }
+
+            // Format the final time as "HH:mm"
+            String time = scheduledShutdownTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+
+            // Create the shutdown command
+            String shutdownCommand = "shutdown -h " + time;
+
+            // Execute the shutdown command
+            Runtime runtime = Runtime.getRuntime();
+            Process process = runtime.exec(shutdownCommand);
+
+            // Print the scheduled shutdown time and command
+            System.out.println("Scheduled shutdown time: " + time);
+            System.out.println("Shutdown command: " + shutdownCommand);
+
+            // Wait for the process to complete (cancel the scheduled shutdown)
+            process.waitFor();
+
+            // Check if the cancellation was successful
+            if (process.exitValue() == 0) {
+                System.out.println("Scheduled successfully.");
+            } else {
+                System.err.println("Failed to schedule shutdown.");
+            }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void cancelScheduledShutdown() {
+        try {
+            // Create the cancel shutdown command
+            String cancelCommand = "sudo shutdown -c";
+
+            // Execute the cancel shutdown command
+            Runtime runtime = Runtime.getRuntime();
+            Process process = runtime.exec(cancelCommand);
+
+            // Wait for the process to complete (cancel the scheduled shutdown)
+            process.waitFor();
+
+            // Check if the cancellation was successful
+            if (process.exitValue() == 0) {
+                System.out.println("Scheduled shutdown canceled successfully.");
+            } else {
+                System.err.println("Failed to cancel scheduled shutdown.");
+            }
+
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 
     public static void main(String[] args) throws IOException {
