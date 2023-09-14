@@ -170,7 +170,7 @@ public class HelloApplication extends Application {
 
     private double offsetX;
     private double offsetY;
-    // Add a flag to keep track of the current state
+
     private boolean iconsVisible = false;
     private boolean timeVisible = false;
     public static boolean autoFillTimeSheet = false;

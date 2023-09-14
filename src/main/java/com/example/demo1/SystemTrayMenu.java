@@ -34,8 +34,8 @@ public class SystemTrayMenu {
         if (SystemTray.isSupported()) {
 
             SystemTray tray = SystemTray.getSystemTray();
-            Image icon = new ImageIcon(getClass().getResource("/clock2.png")).getImage();
-            icon = resizeImage(icon, 24, 24);
+            Image icon = new ImageIcon(getClass().getResource("/clock4.png")).getImage();
+//            icon = resizeImage(icon, 100, 100);
             TrayIcon trayIcon = new TrayIcon(icon, "Your Application Name");
             trayIcon.setImageAutoSize(true);
 
@@ -231,11 +231,15 @@ public class SystemTrayMenu {
         }
         else{
             label.addMouseListener(new MouseAdapter() {
-//                @Override
-//                public void mouseClicked(MouseEvent e) {
-//                    // Handle menu item click here
-//                    System.out.println("click");
-//                }
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    // Handle menu item click here
+                    System.out.println("click");
+                    if(item.getLabel().equals("Exit")){
+                        System.exit(0);
+                    }
+
+                }
 
                 @Override
                 public void mouseEntered(MouseEvent e) {
