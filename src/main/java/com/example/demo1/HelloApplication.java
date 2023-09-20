@@ -176,7 +176,11 @@ public class HelloApplication extends Application {
     public static boolean autoFillTimeSheet = false;
     public static boolean autoPCTurnOff = false;
     public static Double pcTurnoffMinutes = 1.0;
-    public boolean autoUpdateTime = false;
+    public static boolean autoUpdateTime = false;
+    public static boolean alwaysOnTop = true;
+
+    public static boolean isMinimize = false;
+
     public String[] timeField = {"8"};
     public String[] empCode = {"574"};
     private boolean isDialogVisible = false;
@@ -404,6 +408,17 @@ public class HelloApplication extends Application {
         Timer timer = new Timer();
         final TimerTask[] conditionTask = new TimerTask[1]; // Declare a final array to hold the TimerTask
 
+
+
+
+        root.getChildren().addAll(icon1, icon2, icon3, helloText);
+
+        Scene scene = new Scene(root);
+
+        scene.setFill(null);
+        topBarStage.setScene(scene);
+        topBarStage.show();
+
         conditionTask[0] = new TimerTask() {
             @Override
             public void run() {
@@ -421,22 +436,31 @@ public class HelloApplication extends Application {
                     iconsVisible = false;
                     isIcon3Visible[0] = true;
                     if(autoPCTurnOff){
-                     scheduleSystemShutdown(pcTurnoffMinutes, empTime.get());
+                        scheduleSystemShutdown(pcTurnoffMinutes, empTime.get());
                     }
+                }
+                else if(alwaysOnTop && isMinimize) {
+                    System.out.println("iam callled 1");
+
+                    Platform.runLater(() -> {
+                        System.out.println("runlater called");
+                        topBarStage.setAlwaysOnTop(true);
+                    });
+                    isMinimize = false;
+                }else if (!alwaysOnTop && isMinimize){
+                    System.out.println("iam callled 2");
+                    Platform.runLater(() -> {
+                        System.out.println("runlater called");
+                        topBarStage.setAlwaysOnTop(false);
+                    });
+
+                    isMinimize = false;
+
+
                 }
             }
         };
         timer.scheduleAtFixedRate(conditionTask[0], 0, 5000);
-
-
-        root.getChildren().addAll(icon1, icon2, icon3, helloText);
-
-        Scene scene = new Scene(root);
-
-        scene.setFill(null);
-        topBarStage.setScene(scene);
-        topBarStage.show();
-
         primaryStage.setOnCloseRequest(event -> {
             conditionTask[0].cancel();
             timer.cancel();
@@ -558,6 +582,8 @@ public class HelloApplication extends Application {
             writer.write("autoFillTimeSheet=false");
             writer.newLine();
             writer.write("autoPCTurnOff=false");
+            writer.newLine();
+            writer.write("alwaysOnTop=true");
             // Add more lines for other boolean variables with default values if needed
             writer.close();
         } catch (IOException e) {

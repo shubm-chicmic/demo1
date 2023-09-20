@@ -1,2 +1,3 @@
-autoFillTimeSheet=true
+autoFillTimeSheet=false
 autoPCTurnOff=false
+alwaysOnTop=true

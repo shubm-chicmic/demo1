@@ -5,6 +5,7 @@ import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.image.WritableImage;
 import javafx.scene.web.WebView;
+import org.controlsfx.control.CheckListView;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -155,7 +156,7 @@ public class SystemTrayMenu {
         label.setBackground(new Color(40, 40, 40));
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        if (item.getLabel().equals("PC Turn Off") || item.getLabel().equals("Auto TimeSheet Fill")) {
+        if (item.getLabel().equals("PC Turn Off") || item.getLabel().equals("Auto TimeSheet Fill") || item.getLabel().equals("Always On Top")) {
             Boolean isActive = (!item.getLabel().equals("PC Turn Off")) ? HelloApplication.autoFillTimeSheet : HelloApplication.autoPCTurnOff;
             JPopupMenu dropdownMenu = new JPopupMenu();
             JRadioButtonMenuItem onMenuItem = new JRadioButtonMenuItem("Active");
@@ -165,25 +166,37 @@ public class SystemTrayMenu {
 
             buttonGroup.add(onMenuItem);
             buttonGroup.add(offMenuItem);
-
-            // Set the default value based on the isActive boolean variable
-            if (isActive) {
-                onMenuItem.setSelected(true); // Set "Active" as default
-            } else {
-                offMenuItem.setSelected(true); // Set "Inactive" as default
+            if(item.getLabel().equals("Always On Top")){
+                if(HelloApplication.alwaysOnTop){
+                    onMenuItem.setSelected(true);
+                }else {
+                    offMenuItem.setSelected(true);
+                }
+            }else {
+                // Set the default value based on the isActive boolean variable
+                if (isActive) {
+                    onMenuItem.setSelected(true); // Set "Active" as default
+                } else {
+                    offMenuItem.setSelected(true); // Set "Inactive" as default
+                }
             }
             // Create a common action listener for both radio button menu items
             ActionListener radioActionListener = e -> {
                 boolean setToActive = e.getSource() == onMenuItem;
 
                 // Update the corresponding boolean variable based on the menu item and selection
-                if (!item.getLabel().equals("PC Turn Off")) {
+                if (item.getLabel().equals("Auto TimeSheet Fill")) {
                     HelloApplication.autoFillTimeSheet = setToActive;
                     HelloApplication.updateCacheFile("autoFillTimeSheet", setToActive);
-                } else {
+                } else if(item.getLabel().equals("PC Turn Off")) {
                     HelloApplication.autoPCTurnOff = setToActive;
+                    HelloApplication.isMinimize = true;
                     HelloApplication.updateCacheFile("autoPCTurnOff", setToActive);
 
+                }else {
+                    HelloApplication.alwaysOnTop = !HelloApplication.alwaysOnTop;
+                    HelloApplication.isMinimize = true;
+                    HelloApplication.updateCacheFile("alwaysOnTop", setToActive);
                 }
             };
 
@@ -232,12 +245,29 @@ public class SystemTrayMenu {
         else{
             label.addMouseListener(new MouseAdapter() {
                 @Override
+//                public void mouseClicked(MouseEvent e) {
+//                    // Handle menu item click here
+//                    System.out.println("click");
+//                    if(item.getLabel().equals("Exit")){
+//                        System.exit(0);
+//                    }
+//                    if(item.getLabel().equals("Always On Top")){
+//                        System.out.println("clicked");
+//                        item.setLabel("Minimized");
+////                        HelloApplication.isMinimize = true;
+////                        HelloApplication.alwaysOnTop = false;
+//                    }
+//                    if(item.getLabel().equals("Minimized")){
+//                        item.setLabel("Always On Top");
+////                        HelloApplication.alwaysOnTop = true;
+//                    }
+//
+//                }
                 public void mouseClicked(MouseEvent e) {
-                    // Handle menu item click here
-                    System.out.println("click");
-                    if(item.getLabel().equals("Exit")){
-                        System.exit(0);
-                    }
+//
+                        if (item.getLabel().equals("Exit")) {
+                            System.exit(0);
+                        }
 
                 }
 

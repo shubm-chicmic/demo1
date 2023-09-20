@@ -12,12 +12,13 @@ module com.example.demo1 {
     requires org.kordamp.bootstrapfx.core;
     requires com.almasb.fxgl.all;
     requires org.apache.httpcomponents.httpclient;
-    requires org.apache.httpcomponents.httpcore;
+
     requires org.jsoup;
     requires org.json;
 
     requires com.jfoenix;
     requires javafx.swing;
+    requires org.apache.httpcomponents.httpcore;
 
     opens com.example.demo1 to javafx.fxml;
     exports com.example.demo1;
