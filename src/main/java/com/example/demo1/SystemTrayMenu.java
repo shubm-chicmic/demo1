@@ -190,7 +190,7 @@ public class SystemTrayMenu {
                     HelloApplication.updateCacheFile("autoFillTimeSheet", setToActive);
                 } else if(item.getLabel().equals("PC Turn Off")) {
                     HelloApplication.autoPCTurnOff = setToActive;
-                    HelloApplication.isMinimize = true;
+                  //  HelloApplication.isMinimize = true;
                     HelloApplication.updateCacheFile("autoPCTurnOff", setToActive);
 
                 }else {

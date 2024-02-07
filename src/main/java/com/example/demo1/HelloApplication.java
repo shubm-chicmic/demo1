@@ -1,6 +1,7 @@
 package com.example.demo1;
 
 import com.example.demo1.AutoUpdate.AutoUpdateManager;
+import com.example.demo1.WindowEmptyPositionFinding.WindowPositionManager;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.PauseTransition;
@@ -43,6 +44,7 @@ import java.awt.event.WindowEvent;
 import java.io.*;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
@@ -69,9 +71,8 @@ public class HelloApplication extends Application {
         // Handle if "totalTimeInWorkZone" is not found or extraction fails
         return "Error: Unable to extract totalTimeInWorkZone";
     }
-
     public static String empTimeCal(String empCode, String workingTime) {
-        String token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2M2NlN2JmZjkzZTkxMzA2N2QwMmNlOGQiLCJlbWFpbCI6InNodWIubWlzaHJhMjIxMEBnbWFpbC5jb20iLCJ0aW1lIjoxNjkxNDg1OTUwMjY5LCJpYXQiOjE2OTE0ODU5NTB9.NazGmjzozuxoMJlPg7nbfYXmXOgOlXjMtwl95Saesiw";
+        String token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2M2NlN2JmZjkzZTkxMzA2N2QwMmNlOGQiLCJlbWFpbCI6InNodWIubWlzaHJhMjIxMEBnbWFpbC5jb20iLCJ0aW1lIjoxNzAzNzY4ODY0MzQ1LCJpYXQiOjE3MDM3Njg4NjR9.lkNh6b-qRww3RTdLABJ15Dl7cf9aMcnLCpMe1Q3g-Ek";
 //        String url = "https://apigateway.erp.chicmic.in/v1/biometric/punches";
         String url = "https://apigateway.erp.chicmic.in/v1/biometric/time-spent";
 
@@ -117,7 +118,7 @@ public class HelloApplication extends Application {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return "00:00:00";
+            return LocalDateTime.now().toString();
             // Handle exception
         }
 
@@ -137,29 +138,6 @@ public class HelloApplication extends Application {
         } else {
             Duration duration = Duration.between(currentTime, targetTime);
             long totalSeconds = duration.getSeconds();
-//
-//            Thread counterThread = new Thread(() -> {
-//                for (long seconds = totalSeconds; seconds >= 0; seconds--) {
-//                    long hours = seconds / 3600;
-//                    long minutes = (seconds % 3600) / 60;
-//                    long remainingSeconds = seconds % 60;
-//
-//                    String remainingTime = String.format("%02d:%02d:%02d", hours, minutes, remainingSeconds);
-//
-//                    // Update the remainingTime string
-//                    synchronized (this) {
-//                        remainingTimeStr = remainingTime;
-//                    }
-//
-//                    try {
-//                        Thread.sleep(1000); // Wait for one second
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            });
-//
-//            counterThread.start();
             return String.format("%02d:%02d:%02d", duration.toHours(), duration.toMinutesPart(), duration.toSecondsPart());
         }
     }
@@ -461,6 +439,10 @@ public class HelloApplication extends Application {
             }
         };
         timer.scheduleAtFixedRate(conditionTask[0], 0, 5000);
+        WindowPositionManager.setWindowPosition(primaryStage);
+
+        // Start monitoring and adjusting the window position dynamically
+        WindowPositionManager.monitorAndAdjustWindowPosition(primaryStage);
         primaryStage.setOnCloseRequest(event -> {
             conditionTask[0].cancel();
             timer.cancel();
@@ -562,6 +544,9 @@ public class HelloApplication extends Application {
                                 break;
                             case "autoPCTurnOff":
                                 autoPCTurnOff = value;
+                                break;
+                            case "alwaysOnTop":
+                                alwaysOnTop=value;
                                 break;
                             // Add more cases if you have more boolean variables
                         }
