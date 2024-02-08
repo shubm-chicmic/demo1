@@ -439,10 +439,8 @@ public class HelloApplication extends Application {
             }
         };
         timer.scheduleAtFixedRate(conditionTask[0], 0, 5000);
-        WindowPositionManager.setWindowPosition(primaryStage);
-
         // Start monitoring and adjusting the window position dynamically
-        WindowPositionManager.monitorAndAdjustWindowPosition(primaryStage);
+        WindowPositionManager.monitorAndAdjustWindowPosition(topBarStage);
         primaryStage.setOnCloseRequest(event -> {
             conditionTask[0].cancel();
             timer.cancel();

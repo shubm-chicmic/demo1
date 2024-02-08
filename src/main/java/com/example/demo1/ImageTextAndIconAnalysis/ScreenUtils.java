@@ -1,9 +1,12 @@
 package com.example.demo1.ImageTextAndIconAnalysis;
 
+import javafx.util.Pair;
 import nu.pattern.OpenCV;
 import org.opencv.core.*;
+import org.opencv.core.Point;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.imgproc.Moments;
 import org.opencv.videoio.VideoCapture;
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -15,7 +18,9 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 public class ScreenUtils {
 
@@ -158,50 +163,127 @@ public class ScreenUtils {
         return largestEmptySpace;
     }
 
-    public static void main(String[] args) {
+    public static Pair<Integer, Integer> screenEmptySpaceFinder() {
         try {
             // Example usage: Find empty space for an application window with width 200 and height 100
-            Rectangle emptySpace = findEmptySpace(200, 100);
-            if (emptySpace != null) {
-                System.out.println("Empty space found: " + emptySpace);
-            } else {
-                System.out.println("No empty space found.");
+            Rectangle screenRect = new Rectangle(Toolkit.getDefaultToolkit().getScreenSize());
+            BufferedImage screenImage = null;
+            try {
+                screenImage = new Robot().createScreenCapture(screenRect);
+                File outputFile = new File("captured_screen.png");
+                ImageIO.write(screenImage, "png", outputFile);
+
+                System.out.println("Screen captured and saved to: " + outputFile.getAbsolutePath());
+            } catch (AWTException | IOException e) {
+                e.printStackTrace();
             }
+
             Mat capturedImage = Imgcodecs.imread("captured_screen.png");
 
             // Convert to grayscale
             Mat grayImage = new Mat();
             Imgproc.cvtColor(capturedImage, grayImage, Imgproc.COLOR_BGR2GRAY);
 
-            // Thresholding to separate text/images from background
-            Mat thresholdedImage = new Mat();
-            Imgproc.threshold(grayImage, thresholdedImage, 200, 255, Imgproc.THRESH_BINARY_INV);
+            // Apply adaptive thresholding to separate text/lines from background
+            Mat binaryImage = new Mat();
+            Imgproc.adaptiveThreshold(grayImage, binaryImage, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV, 15, 5); // Adjust parameters as needed
 
-            // Find contours of potential empty space regions
-            Mat hierarchy = new Mat();
+            // Perform morphological operations to reduce noise
+            Mat morphedImage = new Mat();
+            Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(1, 1)); // Adjust kernel size
+            Imgproc.morphologyEx(binaryImage, morphedImage, Imgproc.MORPH_CLOSE, kernel);
+
+            // Find contours
             List<MatOfPoint> contours = new ArrayList<>();
-            Imgproc.findContours(thresholdedImage, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+            Mat hierarchy = new Mat();
+            Imgproc.findContours(morphedImage, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
-            // Filter out contours based on size or other criteria
-            List<MatOfPoint> emptySpaceContours = new ArrayList<>();
+            // Filter contours based on area or other characteristics (e.g., aspect ratio)
+            List<MatOfPoint> filteredContours = new ArrayList<>();
             for (MatOfPoint contour : contours) {
-                Rect boundingRect = Imgproc.boundingRect(contour);
-                // Example filter: only consider contours with area within a specific range
-                if (boundingRect.area() > 1000 && boundingRect.area() < 50000) {
-                    emptySpaceContours.add(contour);
+                double area = Imgproc.contourArea(contour);
+                if (area > 10 && area < 50000) { // Adjust area threshold as needed
+                    // You can add additional criteria here, such as aspect ratio or solidity
+
+                }else {
+                    filteredContours.add(contour);
                 }
             }
 
-            // Draw filtered contours on original image
+            // Visualize filtered contours (for debugging)
             Mat resultImage = new Mat();
             capturedImage.copyTo(resultImage);
-            Imgproc.drawContours(resultImage, emptySpaceContours, -1, new Scalar(0, 255, 0), 2);
+            Imgproc.drawContours(resultImage, filteredContours, -1, new Scalar(0, 255, 0), 2);
 
-            // Save result image
-            Imgcodecs.imwrite("empty_space_regions.png", resultImage);
+            // Save result image (for visualization)
+            Imgcodecs.imwrite("contours_detected.png", resultImage);
+            double totalArea = capturedImage.rows() * capturedImage.cols();
+
+// Calculate the combined area occupied by detected text and lines
+            double occupiedArea = 0.0;
+            for (MatOfPoint contour : filteredContours) {
+                occupiedArea += Imgproc.contourArea(contour);
+            }
+
+// Calculate the remaining empty space
+            double remainingArea = totalArea - occupiedArea;
+            Random random = new Random();
+            int x = random.nextInt(capturedImage.cols());
+            int y = random.nextInt(capturedImage.rows());
+            Pair<Integer, Integer> coordinates = new Pair<>(x, y);
+
+            // Return the Pair object containing the coordinates
+            Pair<Integer, Integer> emptySpaceCoordinates = findLatestEmptySpace(capturedImage, resultImage);
+            System.out.println("emptySpaceCoordinates: " + emptySpaceCoordinates);
+            return emptySpaceCoordinates;
+
+            // Select empty space (e.g., largest connected component)
+            // Implementation depends on the specific requirements and characteristics of your images
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return null;
     }
+
+    private static Pair<Integer, Integer> findLatestEmptySpace(Mat capturedImage, Mat contoursDetectedImage) {
+        // Convert contours detected image to grayscale
+        Mat grayContoursImage = new Mat();
+        Imgproc.cvtColor(contoursDetectedImage, grayContoursImage, Imgproc.COLOR_BGR2GRAY);
+
+        // Threshold to create a binary image where non-contour areas are white (255) and contour areas are black (0)
+        Mat binaryContoursImage = new Mat();
+        Imgproc.threshold(grayContoursImage, binaryContoursImage, 1, 255, Imgproc.THRESH_BINARY);
+
+        // Find contours in the binary image
+        List<MatOfPoint> emptyContours = new ArrayList<>();
+        Mat hierarchy = new Mat();
+        Imgproc.findContours(binaryContoursImage, emptyContours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        // Find the largest contour, which represents the largest empty space
+        double largestEmptyArea = 0.0;
+        MatOfPoint largestEmptyContour = null;
+        for (MatOfPoint emptyContour : emptyContours) {
+            double emptyContourArea = Imgproc.contourArea(emptyContour);
+            if (emptyContourArea > largestEmptyArea) {
+                largestEmptyArea = emptyContourArea;
+                largestEmptyContour = emptyContour;
+            }
+        }
+
+        // If no empty space is found, return null or handle appropriately
+        if (largestEmptyContour == null) {
+            return null;
+        }
+
+        // Calculate the centroid of the largest empty space contour
+        Moments moments = Imgproc.moments(largestEmptyContour);
+        int centroidX = (int) (moments.get_m10() / moments.get_m00());
+        int centroidY = (int) (moments.get_m01() / moments.get_m00());
+
+        // Return the centroid coordinates
+        return new Pair<>(centroidX, centroidY);
+    }
+
+
 }
